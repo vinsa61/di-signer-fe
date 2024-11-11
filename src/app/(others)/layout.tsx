@@ -1,7 +1,10 @@
+"use client";
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "../globals.css";
 import Navbar from "../components/nav";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 const geistSans = localFont({
   src: "../fonts/GeistVF.woff",
@@ -32,26 +35,59 @@ const spaceMonoBold = localFont({
   display: "swap", // Optional for better font rendering
 });
 
-export const metadata: Metadata = {
-  title: "Diner",
-  description: "Digital Signature Protocol",
-};
-
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  interface UserData {
+    message: string;
+    _id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    username: string;
+  }
+
+  const [userData, setUserData] = useState<UserData | null>(null);
+
+  const router = useRouter();
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const token = window.localStorage.getItem("token");
+
+      fetch("http://localhost:3001/api/data/dashboard", {
+        headers: {
+          Authorization: `Bearer ${token}`, // Pass the token in the header
+        },
+      })
+        .then((response) => {
+          if (!response.ok) {
+            router.push("/login");
+            throw new Error("Unauthorized");
+          }
+          return response.json();
+        })
+        .then((data) => {
+          console.log(data);
+          setUserData(data);
+        })
+        .catch((error) => {
+          console.log(error);
+          router.push("/login");
+        });
+    }
+  }, [router]);
+
   return (
     <html lang="en">
-      <head>
-      </head>
+      <head></head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${spaceMono.variable} ${spaceMonoBold.variable} antialiased bg-black dark`}
       >
-        <Navbar />
+        <Navbar username={userData ? userData.username : "Loading..."} />
         {children}
-
       </body>
     </html>
   );
