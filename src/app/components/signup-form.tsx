@@ -50,7 +50,7 @@ export function SignupForm() {
       if (response.ok) {
         localStorage.setItem("token", data.token); // Store JWT in local storage
         alert("Register successful!");
-        window.location.href = "/";
+        window.location.href = "/dashboard";
       } else {
         setError(data.message); // Show error message from backend
       }
@@ -139,7 +139,9 @@ export function SignupForm() {
             </div>
           </CardContent>
           <CardFooter className="flex flex-col">
-            <button className="w-full">Register</button>
+            <button className="w-full border-2 border-gray-300 rounded-md py-2 transition-all duration-500 ease-in-out hover:text-white hover:border-blue-600">
+              Register
+            </button>
           </CardFooter>
         </Card>
         <div className="mt-4 text-center text-sm">

@@ -2,9 +2,10 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "../globals.css";
-import Navbar from "../components/nav";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import Navbar from "../components/nav";
+import PopUpNav from "../components/pop-up-nav";
 
 const geistSans = localFont({
   src: "../fonts/GeistVF.woff",
@@ -49,6 +50,16 @@ export default function RootLayout({
     username: string;
   }
 
+  const [isNavVisible, setIsNavVisible] = useState(false);
+  const toggleNav = () => {
+    setIsNavVisible((prev) => !prev);
+    if (!isNavVisible) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "auto";
+    }
+  };
+
   const [userData, setUserData] = useState<UserData | null>(null);
 
   const router = useRouter();
@@ -84,9 +95,13 @@ export default function RootLayout({
     <html lang="en">
       <head></head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${spaceMono.variable} ${spaceMonoBold.variable} antialiased bg-black dark`}
+        className={`${geistSans.variable} ${geistMono.variable} ${spaceMono.variable} ${spaceMonoBold.variable} antialiased bg-black dark font-[family-name:var(--space-mono)]`}
       >
-        <Navbar username={userData ? userData.username : "Loading..."} />
+        <Navbar
+          username={userData ? userData.username : "Loading..."}
+          toggleNav={toggleNav}
+        />
+        <PopUpNav isNavVisible={isNavVisible} toggleNav={toggleNav} />
         {children}
       </body>
     </html>

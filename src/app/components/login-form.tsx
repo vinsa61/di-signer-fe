@@ -18,11 +18,11 @@ import { Input } from "@/components/ui/input";
 export function LoginForm() {
   const [email, setEmail] = useState(""); // Track email input
   const [password, setPassword] = useState(""); // Track password input
-  const [error, setError] = useState(""); 
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       // Send login data to the backend API
       const response = await fetch("http://localhost:3001/api/auth/login", {
@@ -33,7 +33,6 @@ export function LoginForm() {
         body: JSON.stringify({ email, password }),
       });
 
-
       const data = await response.json();
 
       console.log(data.message); // Check if the error message is correct
@@ -42,7 +41,7 @@ export function LoginForm() {
       if (response.ok) {
         localStorage.setItem("token", data.token); // Store JWT in local storage
         alert("Login successful!");
-        window.location.href = '/';
+        window.location.href = "/dashboard";
       } else {
         setError(data.message); // Show error message from backend
       }
@@ -50,7 +49,6 @@ export function LoginForm() {
       setError("An error occurred during login.");
     }
   };
-
 
   return (
     <div className="w-full max-w-md font-[family-name:var(--space-mono)]">
@@ -63,7 +61,6 @@ export function LoginForm() {
             </CardDescription>
 
             {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
-            
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -92,7 +89,9 @@ export function LoginForm() {
             </div>
           </CardContent>
           <CardFooter className="flex flex-col">
-            <button className="w-full">Login</button>
+            <button className="w-full border-2 border-gray-300 rounded-md py-2 transition-all duration-500 ease-in-out hover:text-white hover:border-blue-600">
+              Login
+            </button>
           </CardFooter>
         </Card>
         <div className="mt-4 text-center text-sm">

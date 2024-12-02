@@ -51,7 +51,7 @@ export default function Video() {
         style={{ marginTop: "0" }}
       />
 
-      <div className="absolute top-0 left-0 w-full h-full grid grid-rows-2 md:grid-rows-1 grid-cols-1 md:grid-cols-3 px-4 md:px-7 items-center justify-center text-white font-[family-name:var(--space-mono)]">
+      <div id="home" className="absolute top-0 left-0 w-full h-full grid grid-rows-2 md:grid-rows-1 grid-cols-1 md:grid-cols-3 px-4 md:px-7 items-center justify-center text-white font-[family-name:var(--space-mono)]">
         <div className="flex flex-col h-full translate-y-1/4 md:col-span-2 md:pl-2 lg:pl-3 gap-5">
           <div className="text-4xl md:text-4xl lg:text-6xl font-[family-name:var(--space-mono-bold)]">
             Digital Signature Protocol
