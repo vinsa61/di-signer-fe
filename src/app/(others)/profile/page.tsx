@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-export default function User() {
+export default function Profile() {
   interface UserData {
     message: string;
     _id: string;

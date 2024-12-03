@@ -6,54 +6,40 @@ import { DataTable } from "./data-table";
 import Image from "next/image";
 
 // Mock function to fetch Request data
-async function getRequestData(): Promise<Request[]> {
-  return [
-    {
-      id: "728ed52f",
-      time: "20:10",
-      status: "pending",
-      receiver: "m@example.com",
+async function getInboxData(): Promise<Request[]> {
+
+  const token = localStorage.getItem("token");
+  const data = await fetch("http://localhost:3001/api/search/mail", {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
     },
-    {
-      id: "728ed52f",
-      time: "20:10",
-      status: "pending",
-      receiver: "m@example.com",
-    },
-    {
-      id: "728ed52f",
-      time: "20:10",
-      status: "pending",
-      receiver: "m@example.com",
-    },
-  ];
+  });
+
+  if (!data.ok) {
+    alert("Error in fetching request data");
+    throw new Error("Failed to fetch Request data");
+  }
+
+  return data.json();
 }
 
 // Mock function to fetch Inbox data
-async function getInboxData(): Promise<Inbox[]> {
-  return [
-    {
-      id: "728ed52f",
-      status: "pending",
-      sender: "test",
-      message: "Hello",
-      time: "20:10",
+async function getRequestData(): Promise<Inbox[]> {
+  const token = localStorage.getItem("token");
+  const data = await fetch("http://localhost:3001/api/search/requests", {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
     },
-    {
-      id: "728ed52f",
-      status: "pending",
-      sender: "test",
-      message: "Hello",
-      time: "20:10",
-    },
-    {
-      id: "728ed52f",
-      status: "pending",
-      sender: "test",
-      message: "Hello",
-      time: "20:10",
-    },
-  ];
+  });
+
+  if (!data.ok) {
+    alert("Error in fetching request data");
+    throw new Error("Failed to fetch Request data");
+  }
+
+  return data.json();
 }
 
 export default function Dashboard() {
@@ -63,10 +49,10 @@ export default function Dashboard() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const requestData = await getRequestData(); // Fetch Request data
-      setData1(requestData);
-      const inboxData = await getInboxData(); // Fetch Inbox data
-      setData2(inboxData);
+      const inboxData = await getInboxData(); // FetchIRequest data
+      setData1(inboxData);
+      const requestData = await getRequestData(); // Fetch Inbox data
+      setData2(requestData);
     };
     fetchData();
   }, []);

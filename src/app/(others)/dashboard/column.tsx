@@ -23,11 +23,11 @@ export const columns1: ColumnDef<Request>[] = [
     header: "Status",
   },
   {
-    accessorKey: "receiver",
-    header: "Receiver",
+    accessorKey: "senderUsername",
+    header: "Sender",
   },
   {
-    accessorKey: "message",
+    accessorKey: "content",
     header: "Message",
   },
   {
@@ -62,11 +62,11 @@ export const columns2: ColumnDef<Inbox>[] = [
     header: "Status",
   },
   {
-    accessorKey: "sender",
-    header: "Sender",
+    accessorKey: "receiverUsername",
+    header: "Receiver",
   },
   {
-    accessorKey: "message",
+    accessorKey: "content",
     header: "Message",
   },
   {

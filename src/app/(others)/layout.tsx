@@ -98,10 +98,14 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${spaceMono.variable} ${spaceMonoBold.variable} antialiased bg-black dark font-[family-name:var(--space-mono)]`}
       >
         <Navbar
-          username={userData ? userData.username : "Loading..."}
+          username={userData ? userData.username : ""}
           toggleNav={toggleNav}
         />
-        <PopUpNav isNavVisible={isNavVisible} toggleNav={toggleNav} />
+        <PopUpNav
+          username={userData ? userData.username : ""}
+          isNavVisible={isNavVisible}
+          toggleNav={toggleNav}
+        />
         {children}
       </body>
     </html>

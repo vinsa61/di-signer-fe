@@ -108,11 +108,15 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${spaceMono.variable} ${spaceMonoBold.variable} antialiased bg-black dark`}
       >
         <div className="h-screen overflow-hidden font-[family-name:var(--space-mono)]">
-        <Navbar
-          username={userData ? userData.username : "Loading..."}
-          toggleNav={toggleNav}
-        />
-        <PopUpNav isNavVisible={isNavVisible} toggleNav={toggleNav} />
+          <Navbar
+            username={userData ? userData.username : null}
+            toggleNav={toggleNav}
+          />
+          <PopUpNav
+            username={userData ? userData.username : ""}
+            isNavVisible={isNavVisible}
+            toggleNav={toggleNav}
+          />
           <Video />
         </div>
         {children}

@@ -64,7 +64,7 @@ export default function Navbar({
               </DropdownMenuTrigger>
               <DropdownMenuContent>
                 <DropdownMenuItem>
-                  <Link href="/user">Profile</Link>
+                  <Link href="/profile">Profile</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleLogout}>
                   Log out
@@ -74,7 +74,7 @@ export default function Navbar({
           ) : (
             <div className="flex space-x-2 items-center justify-center gap-x-2">
               <Link href="/login">Login</Link>
-              <Link href="/signup">Signup</Link>
+              <Link href="/register">Signup</Link>
             </div>
           )}
         </div>

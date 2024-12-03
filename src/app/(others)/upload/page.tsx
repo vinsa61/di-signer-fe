@@ -1,29 +1,53 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { pdfjs, Document, Page } from "react-pdf";
-import "react-pdf/dist/esm/Page/AnnotationLayer.css";
-import "react-pdf/dist/esm/Page/TextLayer.css";
+import "@react-pdf-viewer/core/lib/styles/index.css";
+import { Worker, Viewer, SpecialZoomLevel } from "@react-pdf-viewer/core";
+import { useForm, FormProvider } from "react-hook-form";
 
-// Configure the PDF worker
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-  "pdfjs-dist/build/pdf.worker.min.mjs",
-  import.meta.url
-).toString();
+type SignUpRequest = {
+  recipient: string;
+  topic: string;
+  x: string;
+  y: string;
+  document: FileList | null;
+};
 
-export default function UploadPDFPage() {
+export default function Upload() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [numPages, setNumPages] = useState<number>(0);
-  const [pageNumber, setPageNumber] = useState<number>(1);
-  const [scale, setScale] = useState<number>(1);
-  const containerRef = useRef<HTMLDivElement | null>(null);
   const [uploading, setUploading] = useState<boolean>(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedUsername, setSelectedUsername] = useState<string>("");
+  const [topic, setTopic] = useState<string>("");
   const [dropdownOpen, setDropdownOpen] = useState(false); // State for dropdown visibility
   const dropdownRef = useRef<HTMLDivElement | null>(null); // Reference for the dropdown container
+  const [fileUrl, setFileUrl] = useState<string | null>(null);
+  const [selection, setSelection] = useState<{
+    x: number;
+    y: number;
+    w: number;
+    height: number;
+  } | null>(null);
+  const [startPoint, setStartPoint] = useState<{ x: number; y: number } | null>(
+    null
+  );
+  const [isMdScreen, setIsMdScreen] = useState(false);
+  const animationFrameId = useRef<number | null>(null);
+  const methods = useForm<SignUpRequest>({ mode: "onChange" });
+  const { handleSubmit } = methods;
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMdScreen(window.innerWidth >= 768);
+    };
+
+    window.addEventListener("resize", handleResize);
+    handleResize();
+
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   useEffect(() => {
     const debounceSearch = setTimeout(() => {
@@ -66,80 +90,54 @@ export default function UploadPDFPage() {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+
   const handleInputClick = () => {
     if (searchTerm) {
       setDropdownOpen(true); // Open dropdown when the input is clicked and there is a search term
     }
   };
+
   const handleClearInput = () => {
     setSearchTerm(""); // Clear the search term
     setSelectedUsername(""); // Clear the selected username
     setDropdownOpen(false); // Close the dropdown
   };
-  useEffect(() => {
-    if (!containerRef.current) return;
-
-    const container = containerRef.current;
-
-    const adjustZoomToFit = () => {
-      const containerWidth = container.offsetWidth;
-      const containerHeight = container.offsetHeight;
-
-      const pdfPageWidth = 600; // Typical PDF width in points
-      const pdfPageHeight = 800; // Typical PDF height in points
-
-      const widthScale = containerWidth / pdfPageWidth - 100;
-      const heightScale = containerHeight / pdfPageHeight;
-      setScale(Math.min(widthScale, heightScale));
-    };
-
-    // Create a ResizeObserver
-    const resizeObserver = new ResizeObserver(() => {
-      adjustZoomToFit();
-    });
-
-    // Start observing the container for size changes
-    resizeObserver.observe(container);
-
-    // Cleanup on component unmount
-    return () => resizeObserver.disconnect();
-  }, []);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
       const file = event.target.files[0];
-      if (file.type === "application/pdf") {
+      const maxFileSize = 5 * 1024 * 1024; // 5MB
+      if (file.type === "application/pdf" && file.size <= maxFileSize) {
         setSelectedFile(file);
+        const blobUrl = URL.createObjectURL(file);
+        setFileUrl(blobUrl);
+      } else if (file.size > maxFileSize) {
+        alert("File size exceeds the 5MB limit.");
       } else {
-        alert("Upload a valid PDF file.");
+        alert("Please upload a valid PDF file.");
       }
-    }
-  };
-
-  const onLoadSuccess = ({ numPages }: { numPages: number }) => {
-    setNumPages(numPages);
-  };
-
-  const goToNextPage = () => {
-    if (pageNumber < numPages) {
-      setPageNumber(pageNumber + 1);
-    }
-  };
-
-  const goToPrevPage = () => {
-    if (pageNumber > 1) {
-      setPageNumber(pageNumber - 1);
     }
   };
 
   const handleUploadClick = () => {
     if (selectedFile) {
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        alert("User is not logged in.");
+        return;
+      }
+
       setUploading(true);
       const formData = new FormData();
       formData.append("pdf", selectedFile);
       fetch("http://localhost:3001/api/upload/document", {
         method: "POST",
         body: formData,
+        headers: {
+          Authorization: `Bearer ${token} ${selectedUsername}`,
+          Message: topic,
+        },
       })
         .then((response) => response.json())
         .then((data) => {
@@ -150,7 +148,7 @@ export default function UploadPDFPage() {
         })
         .catch((error) => {
           console.error("Error uploading file:", error);
-          alert("Failed to upload file.");
+          alert(error);
         });
     } else {
       alert("No file selected.");
@@ -171,138 +169,268 @@ export default function UploadPDFPage() {
     event.preventDefault();
   };
 
-  return (
-    <div className="flex h-[85vh] text-white px-4">
-      {/* Left Section: Form and File Upload */}
-      <div className="w-1/2 p-8 flex flex-col items-start bg-gray-900 border-r border-gray-700">
-        <h2 className="text-3xl mb-6">Upload PDF</h2>
+  // Clean up the blob URL when the component unmounts or file changes
+  useEffect(() => {
+    return () => {
+      if (fileUrl) {
+        URL.revokeObjectURL(fileUrl);
+      }
+    };
+  }, [fileUrl]);
 
-        {/* Search input */}
-        <h2 className="text-lg mb-2">Destination Username</h2>
-        <div className="relative w-full mb-6">
+  const handleMouseDown = (e: React.MouseEvent, page: HTMLElement) => {
+    const rect = page.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    setStartPoint({ x, y });
+  };
+
+  const handleMouseMove = (e: React.MouseEvent, page: HTMLElement) => {
+    if (startPoint) {
+      if (animationFrameId.current) {
+        cancelAnimationFrame(animationFrameId.current);
+      }
+
+      animationFrameId.current = requestAnimationFrame(() => {
+        const rect = page.getBoundingClientRect();
+        const currentX = e.clientX - rect.left;
+        const currentY = e.clientY - rect.top;
+
+        const w = currentX - startPoint.x;
+        const height = currentY - startPoint.y;
+
+        setSelection({
+          x: startPoint.x,
+          y: startPoint.y,
+          w,
+          height,
+        });
+      });
+    }
+  };
+
+  const handleMouseUp = () => {
+    setStartPoint(null);
+    if (animationFrameId.current) {
+      cancelAnimationFrame(animationFrameId.current);
+      animationFrameId.current = null;
+    }
+  };
+
+  const [width, setWidth] = useState(60);
+  const [height, setHeight] = useState(35);
+
+  const handlePageClick = (e: React.MouseEvent, page: HTMLElement) => {
+    const rect = page.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    setSelection({ x, y, w: width, height: height });
+  };
+
+  const renderPage = (props: any) => (
+    <div
+      id="preview-page"
+      style={{
+        position: "relative",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        width: "100%",
+        height: "100%",
+        overflow: "hidden",
+        cursor: isMdScreen ? "crosshair" : "default",
+        zIndex: 100,
+      }}
+      onMouseDown={
+        isMdScreen ? (e) => handleMouseDown(e, e.currentTarget) : undefined
+      }
+      onMouseMove={
+        isMdScreen ? (e) => handleMouseMove(e, e.currentTarget) : undefined
+      }
+      onMouseUp={isMdScreen ? handleMouseUp : undefined}
+      onClick={
+        !isMdScreen ? (e) => handlePageClick(e, e.currentTarget) : undefined
+      }
+    >
+      {props.canvasLayer.children}
+      {isMdScreen && selection && (
+        <div
+          style={{
+            position: "absolute",
+            left: selection.x,
+            top: selection.y,
+            width: selection.w,
+            height: selection.height,
+            border: "2px dashed blue",
+            backgroundColor: "rgba(0, 0, 255, 0.1)",
+            pointerEvents: "none",
+          }}
+        />
+      )}
+      {!isMdScreen && selection && (
+        <div
+          style={{
+            position: "absolute",
+            left: selection.x,
+            top: selection.y,
+            width: selection.w,
+            height: selection.height,
+            border: "2px dashed red",
+            backgroundColor: "rgba(255, 0, 0, 0.1)",
+            pointerEvents: "none",
+          }}
+        />
+      )}
+    </div>
+  );
+
+  return (
+    <div className="flex h-auto md:h-[85vh] text-white w-[92%] md:w-[98%] mx-auto">
+      {/* Left Section: Form and File Upload */}
+      <FormProvider {...methods}>
+        <form
+          // onSubmit={}
+          className="w-full md:w-1/2 p-8 flex flex-col items-start border-x border-b border-gray-700"
+        >
+          <h2 className="text-2xl md:text-3xl mb-6">Upload PDF</h2>
+
+          {/* Search input */}
+          <h2 className="text-base md:text-lg mb-2">Destination Username</h2>
+          <div className="relative w-full mb-6">
+            <input
+              type="text"
+              placeholder="Search for users..."
+              value={selectedUsername || searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                handleInputClick();
+              }}
+              className="search-input text-black pl-4 pr-4 w-full border border-gray-300 rounded-md h-10"
+            />
+            {/* Search results dropdown */}
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={handleClearInput}
+                className="absolute text-lg top-2 right-2 text-gray-600"
+              >
+                ×
+              </button>
+            )}
+            {dropdownOpen && searchTerm && (
+              <div
+                ref={dropdownRef}
+                className="absolute z-10 mt-2 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto"
+              >
+                {loading ? (
+                  <div className="p-4 text-gray-500">Loading...</div>
+                ) : (
+                  <ul>
+                    {results.length > 0 ? (
+                      results.map((user) => (
+                        <li
+                          key={user._id}
+                          className="p-2 hover:bg-gray-100 cursor-pointer text-black"
+                          onClick={() => handleUsernameClick(user.username)}
+                        >
+                          {user.username}
+                        </li>
+                      ))
+                    ) : (
+                      <div className="p-4 text-gray-500">No users found</div>
+                    )}
+                  </ul>
+                )}
+              </div>
+            )}
+          </div>
+          <h2 className="text-base md:text-lg mb-2">Topic</h2>
           <input
             type="text"
-            placeholder="Search for users..."
-            value={selectedUsername || searchTerm}
+            placeholder="Your Topic..."
+            className="search-input text-black pl-4 pr-4 w-full border border-gray-300 rounded-md h-10 mb-6"
             onChange={(e) => {
-              setSearchTerm(e.target.value); // Update search term
-              handleInputClick(); // Handle input click to show dropdown
+              setTopic(e.target.value);
             }}
-            className="search-input text-black pl-4 pr-4 w-full border border-gray-300 rounded-md h-10"
           />
-          {/* Search results dropdown */}
-          {searchTerm && (
-            <button
-              type="button"
-              onClick={handleClearInput}
-              className="absolute text-lg top-2 right-2 text-gray-600"
+          <h2 className="text-base md:text-lg mb-2">Upload File</h2>
+          <div
+            className="border-2 border-gray-700 p-8 mb-4 w-full flex justify-center items-center bg-gray-800 cursor-pointer hover:bg-gray-700"
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+          >
+            <input
+              id="fileInput"
+              type="file"
+              accept="application/pdf"
+              className="hidden"
+              onChange={handleFileChange}
+            />
+            <label
+              htmlFor="fileInput"
+              className="text-base md:text-lg font-medium text-gray-400"
             >
-              ×
-            </button>
-          )}
-          {dropdownOpen && searchTerm && (
-            <div
-              ref={dropdownRef}
-              className="absolute z-10 mt-2 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto"
-            >
-              {loading ? (
-                <div className="p-4 text-gray-500">Loading...</div>
-              ) : (
-                <ul>
-                  {results.length > 0 ? (
-                    results.map((user) => (
-                      <li
-                        key={user._id}
-                        className="p-2 hover:bg-gray-100 cursor-pointer text-black"
-                        onClick={() => handleUsernameClick(user.username)}
-                      >
-                        {user.username}
-                      </li>
-                    ))
-                  ) : (
-                    <div className="p-4 text-gray-500">No users found</div>
-                  )}
-                </ul>
-              )}
+              Drag and drop PDF here or click to upload
+            </label>
+          </div>
+
+          {selectedFile && (
+            <div className="mt-4 text-center">
+              <p className="text-gray-400 text-sm md:text-base">
+                Selected File: {selectedFile.name}
+              </p>
             </div>
           )}
-        </div>
-        <h2 className="text-lg mb-2">Topic</h2>
-        <input
-          type="text"
-          placeholder="Your Topic..."
-          className="search-input text-black pl-4 pr-4 w-full border border-gray-300 rounded-md h-10 mb-6"
-        />
-        <h2 className="text-lg mb-2">Upload File</h2>
-        <div
-          className="border-2 border-gray-700 p-8 mb-4 w-full flex justify-center items-center bg-gray-800 cursor-pointer hover:bg-gray-700"
-          onDrop={handleDrop}
-          onDragOver={handleDragOver}
-        >
-          <input
-            id="fileInput"
-            type="file"
-            accept="application/pdf"
-            className="hidden"
-            onChange={handleFileChange}
-          />
-          <label
-            htmlFor="fileInput"
-            className="text-xl font-medium text-gray-400"
+          <div className="mt-4 text-gray-700">
+            <h1>
+              Selected Coordinates: X: {selection?.x.toFixed(2)}, Y:{" "}
+              {selection?.y.toFixed(2)},{" "}
+              {isMdScreen && <>Width: {selection?.w.toFixed(2)}</>}
+            </h1>
+          </div>
+          <div className="w-full md:hidden h-[45vh] bg-gray-100 mt-6 p-4 border-3 border-primary border-dashed rounded-lg overflow-auto">
+            {fileUrl ? (
+              <Worker
+                workerUrl={`https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js`}
+              >
+                <Viewer
+                  key={fileUrl}
+                  fileUrl={fileUrl}
+                  defaultScale={SpecialZoomLevel.PageFit}
+                  renderPage={renderPage}
+                />
+              </Worker>
+            ) : (
+              <p className="text-center text-gray-500 text-sm md:text-base">
+                File not uploaded
+              </p>
+            )}
+          </div>
+
+          <button
+            onClick={handleUploadClick}
+            disabled={!selectedFile || uploading}
+            className="mt-4 px-6 py-2 bg-blue-500 text-white rounded disabled:bg-gray-500"
           >
-            Drag and drop PDF here or click to upload
-          </label>
-        </div>
-
-        {selectedFile && (
-          <div className="mt-4 text-center">
-            <p className="text-gray-400">Selected File: {selectedFile.name}</p>
-          </div>
-        )}
-
-        <button
-          onClick={handleUploadClick}
-          disabled={!selectedFile || uploading}
-          className="mt-4 px-6 py-2 bg-blue-500 text-white rounded disabled:bg-gray-500"
-        >
-          {uploading ? "Uploading..." : "Upload PDF"}
-        </button>
-      </div>
-
-      {/* Right Section: Canvas for PDF Preview */}
-      <div
-        ref={containerRef}
-        className="overflow- w-1/2 bg-gray-800 m-7 p-4 border-l border-gray-700 flex items-center justify-center flex-col"
-      >
-        {selectedFile ? (
-          <Document file={selectedFile} onLoadSuccess={onLoadSuccess}>
-            <Page pageNumber={pageNumber} scale={scale} />
-          </Document>
+            {uploading ? "Uploading..." : "Send Request"}
+          </button>
+        </form>
+      </FormProvider>
+      <div className="w-1/2 max-md:hidden max-md:h-full bg-gray-900 h-[85vh] p-4 border-3 border-primary border-dashed rounded-lg overflow-auto">
+        {fileUrl ? (
+          <Worker
+            workerUrl={`https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js`}
+          >
+            <Viewer
+              fileUrl={fileUrl}
+              defaultScale={SpecialZoomLevel.PageFit}
+              renderPage={renderPage}
+            />
+          </Worker>
         ) : (
-          <p className="text-center text-gray-500">No PDF file selected</p>
-        )}
-
-        {/* Pagination Controls */}
-        {selectedFile && numPages > 1 && (
-          <div className="pagination flex justify-between mt-4 w-3/4 max-w-3xl">
-            <button
-              onClick={goToPrevPage}
-              disabled={pageNumber <= 1}
-              className="px-4 py-2 bg-gray-500 text-white rounded disabled:bg-gray-300"
-            >
-              Previous
-            </button>
-            <span className="text-lg">
-              Page {pageNumber} of {numPages}
-            </span>
-            <button
-              onClick={goToNextPage}
-              disabled={pageNumber >= numPages}
-              className="px-4 py-2 bg-gray-500 text-white rounded disabled:bg-gray-300"
-            >
-              Next
-            </button>
-          </div>
+          <p className="text-center text-gray-500">File not uploaded</p>
         )}
       </div>
     </div>

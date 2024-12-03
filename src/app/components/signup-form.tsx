@@ -22,6 +22,7 @@ export function SignupForm() {
   const [email, setEmail] = useState(""); // Track email input
   const [password, setPassword] = useState(""); // Track password input
   const [error, setError] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,6 +57,33 @@ export function SignupForm() {
       }
     } catch (error) {
       setError("An error occurred during register.");
+    }
+  };
+
+  const handleDrop = (event: React.DragEvent) => {
+    event.preventDefault();
+    if (event.dataTransfer.files && event.dataTransfer.files[0]) {
+      setSelectedFile(event.dataTransfer.files[0]);
+    }
+  };
+
+  const handleDragOver = (event: React.DragEvent) => {
+    event.preventDefault();
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files[0]) {
+      const file = event.target.files[0];
+      const maxFileSize = 2 * 1024 * 1024; // 2MB
+      if (file.type === "image/png" && file.size <= maxFileSize) {
+        setSelectedFile(file);
+        const blobUrl = URL.createObjectURL(file);
+        // setFileUrl(blobUrl);
+      } else if (file.size > maxFileSize) {
+        alert("File size exceeds the 2MB limit.");
+      } else {
+        alert("Please upload a valid png file.");
+      }
     }
   };
 
@@ -138,6 +166,40 @@ export function SignupForm() {
               />
             </div>
           </CardContent>
+          <div
+            className="border-2 border-gray-700 p-8 mb-4 w-full flex justify-center items-center bg-gray-800 cursor-pointer hover:bg-gray-700"
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+          >
+            <input
+              id="fileInput"
+              type="file"
+              accept="image/png"
+              className="hidden"
+              onChange={handleFileChange}
+            />
+            <label
+              htmlFor="fileInput"
+              className="text-base md:text-lg font-medium text-gray-400"
+            >
+              Drag and drop PNG here or click to upload
+            </label>
+          </div>
+          {selectedFile && (
+            <div className="mt-4 text-center">
+              <p className="text-gray-400 text-sm md:text-base mb-4">
+                Selected File: {selectedFile.name}
+              </p>
+              <div>
+                {/* Preview the image if it's a PNG */}
+                <img
+                  src={URL.createObjectURL(selectedFile)}
+                  alt="File Preview"
+                  className="max-w-[200px] bg-white mx-auto rounded-lg mb-4"
+                />
+              </div>
+            </div>
+          )}
           <CardFooter className="flex flex-col">
             <button className="w-full border-2 border-gray-300 rounded-md py-2 transition-all duration-500 ease-in-out hover:text-white hover:border-blue-600">
               Register
