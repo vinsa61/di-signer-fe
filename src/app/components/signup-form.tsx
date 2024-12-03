@@ -29,19 +29,22 @@ export function SignupForm() {
 
     try {
       // Send login data to the backend API
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/register`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          firstName,
-          lastName,
-          email,
-          username,
-          password,
-        }),
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/auth/register`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            firstName,
+            lastName,
+            email,
+            username,
+            password,
+          }),
+        }
+      );
 
       const data = await response.json();
 
@@ -206,7 +209,7 @@ export function SignupForm() {
             </button>
           </CardFooter>
         </Card>
-        <div className="mt-4 text-center text-sm">
+        <div className="mt-4 text-center text-sm mb-0">
           Have an account?
           <Link className="underline ml-2" href="login">
             Login
