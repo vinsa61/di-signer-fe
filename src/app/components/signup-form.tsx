@@ -209,7 +209,7 @@ export function SignupForm() {
             </button>
           </CardFooter>
         </Card>
-        <div className="mt-4 text-center text-sm mb-0">
+        <div className="mt-4 text-center text-sm">
           Have an account?
           <Link className="underline ml-2" href="login">
             Login
