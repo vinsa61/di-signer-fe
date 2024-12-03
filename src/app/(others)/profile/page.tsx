@@ -20,7 +20,7 @@ export default function Profile() {
   useEffect(() => {
     const token = localStorage.getItem("token");
 
-    fetch("http://localhost:3001/api/data/dashboard", {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/data/dashboard`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,

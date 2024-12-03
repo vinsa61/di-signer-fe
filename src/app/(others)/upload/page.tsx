@@ -54,7 +54,7 @@ export default function Upload() {
       if (searchTerm) {
         setLoading(true);
         fetch(
-          `http://localhost:3001/api/search/users?inputUsername=${searchTerm}`
+          `${process.env.NEXT_PUBLIC_API_URL}/api/search/users?inputUsername=${searchTerm}`
         )
           .then((res) => res.json())
           .then((data) => {

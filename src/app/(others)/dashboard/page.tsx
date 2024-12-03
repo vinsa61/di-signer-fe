@@ -9,7 +9,7 @@ import Image from "next/image";
 async function getInboxData(): Promise<Request[]> {
 
   const token = localStorage.getItem("token");
-  const data = await fetch("http://localhost:3001/api/search/mail", {
+  const data = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/search/mail`, {
     method: "GET",
     headers: {
       Authorization: `Bearer ${token}`,
