@@ -54,7 +54,7 @@ export default function Upload() {
       if (searchTerm) {
         setLoading(true);
         fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/search/users?inputUsername=${searchTerm}`
+          `http://localhost:3001/api/search/users?inputUsername=${searchTerm}`
         )
           .then((res) => res.json())
           .then((data) => {
@@ -106,15 +106,11 @@ export default function Upload() {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
       const file = event.target.files[0];
-      const maxFileSize = 5 * 1024 * 1024; // 5MB
-      if (file.type === "application/pdf" && file.size <= maxFileSize) {
+      if (file.type === "application/pdf") {
         setSelectedFile(file);
-        const blobUrl = URL.createObjectURL(file);
-        setFileUrl(blobUrl);
-      } else if (file.size > maxFileSize) {
-        alert("File size exceeds the 5MB limit.");
+        setFileUrl(URL.createObjectURL(file));
       } else {
-        alert("Please upload a valid PDF file.");
+        alert("Upload a valid PDF file.");
       }
     }
   };
@@ -145,16 +141,18 @@ export default function Upload() {
           const link = document.createElement("a");
           link.href = "/dashboard";
           link.click();
+          setFileUrl(data.fileUrl);
         })
         .catch((error) => {
           console.error("Error uploading file:", error);
           alert(error);
+        })
+        .finally(() => {
+          setUploading(false);
         });
     } else {
       alert("No file selected.");
     }
-
-    setUploading(false);
   };
 
   // Drag-and-drop handler
@@ -168,15 +166,6 @@ export default function Upload() {
   const handleDragOver = (event: React.DragEvent) => {
     event.preventDefault();
   };
-
-  // Clean up the blob URL when the component unmounts or file changes
-  useEffect(() => {
-    return () => {
-      if (fileUrl) {
-        URL.revokeObjectURL(fileUrl);
-      }
-    };
-  }, [fileUrl]);
 
   const handleMouseDown = (e: React.MouseEvent, page: HTMLElement) => {
     const rect = page.getBoundingClientRect();

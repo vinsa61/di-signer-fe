@@ -46,7 +46,7 @@ export function LoginForm() {
         setError(data.message); // Show error message from backend
       }
     } catch (error) {
-      setError("An error occurred during login.");
+      setError(`An error occurred during login. ${process.env.NEXT_PUBLIC_API_URL}`);
     }
   };
 
