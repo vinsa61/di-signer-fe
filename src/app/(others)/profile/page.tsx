@@ -17,10 +17,12 @@ export default function Profile() {
   const [formData, setFormData] = useState<Partial<UserData>>({});
   const router = useRouter();
 
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+
   useEffect(() => {
     const token = localStorage.getItem("token");
 
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/data/dashboard`, {
+    fetch(`${backendUrl}/api/data/dashboard`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -58,7 +60,7 @@ export default function Profile() {
     const token = localStorage.getItem("token");
 
     try {
-      const response = await fetch("http://localhost:3001/api/data/update", {
+      const response = await fetch(`${backendUrl}/api/data/update`, {
         method: "PUT", // or "POST" based on your backend API
         headers: {
           "Content-Type": "application/json",

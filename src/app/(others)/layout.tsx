@@ -64,11 +64,13 @@ export default function RootLayout({
 
   const router = useRouter();
 
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       const token = window.localStorage.getItem("token");
 
-      fetch("http://localhost:3001/api/data/dashboard", {
+      fetch(`${backendUrl}/api/data/dashboard`, {
         headers: {
           Authorization: `Bearer ${token}`, // Pass the token in the header
         },
@@ -93,7 +95,10 @@ export default function RootLayout({
 
   return (
     <html lang="en">
-      <head></head>
+      <head>
+        <title>Diner</title>
+        <link rel="icon" href="/d-logo-white.svg" type="image/x-icon" />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${spaceMono.variable} ${spaceMonoBold.variable} antialiased bg-black dark font-[family-name:var(--space-mono)]`}
       >

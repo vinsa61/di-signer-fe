@@ -45,7 +45,7 @@ export default function Navbar({
           <Link href="/">Home</Link>
           <Link href="/#about">About</Link>
           <Link href="/dashboard">Dashboard</Link>
-          <Link href="/upload">Upload File</Link>
+          <Link href="/request">Send Request</Link>
         </div>
         <div className="hidden md:flex">
           {username ? (

@@ -37,11 +37,6 @@ const spaceMonoBold = localFont({
   display: "swap", // Optional for better font rendering
 });
 
-// export const metadata: Metadata = {
-//   title: "Diner",
-//   description: "Digital Signature Protocol",
-// };
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -70,18 +65,19 @@ export default function RootLayout({
 
   const router = useRouter();
 
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       const token = window.localStorage.getItem("token");
 
-      fetch("http://localhost:3001/api/data/dashboard", {
+      fetch(`${backendUrl}/api/data/dashboard`, {
         headers: {
           Authorization: `Bearer ${token}`, // Pass the token in the header
         },
       })
         .then((response) => {
           if (!response.ok) {
-            // console.error("Failed to fetch user data");
             return null;
           }
           return response.json();
@@ -96,14 +92,16 @@ export default function RootLayout({
           console.error("Error fetching user data:", error);
         });
     }
-  }, []);
+  }, [backendUrl]);
 
   const user_name = userData?.username || "Guest";
-  // const user_name = userData;
 
   return (
     <html lang="en">
-      <head></head>
+      <head>
+        <title>Diner</title>
+        <link rel="icon" href="/d-logo-white.svg" type="image/x-icon" />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${spaceMono.variable} ${spaceMonoBold.variable} antialiased bg-black dark`}
       >

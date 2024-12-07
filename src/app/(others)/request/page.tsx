@@ -21,8 +21,8 @@ export default function Upload() {
   const [loading, setLoading] = useState(false);
   const [selectedUsername, setSelectedUsername] = useState<string>("");
   const [topic, setTopic] = useState<string>("");
-  const [dropdownOpen, setDropdownOpen] = useState(false); // State for dropdown visibility
-  const dropdownRef = useRef<HTMLDivElement | null>(null); // Reference for the dropdown container
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
   const [fileUrl, setFileUrl] = useState<string | null>(null);
   const [selection, setSelection] = useState<{
     x: number;
@@ -37,6 +37,8 @@ export default function Upload() {
   const animationFrameId = useRef<number | null>(null);
   const methods = useForm<SignUpRequest>({ mode: "onChange" });
   const { handleSubmit } = methods;
+
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
 
   useEffect(() => {
     const handleResize = () => {
@@ -54,7 +56,7 @@ export default function Upload() {
       if (searchTerm) {
         setLoading(true);
         fetch(
-          `http://localhost:3001/api/search/users?inputUsername=${searchTerm}`
+          `${backendUrl}/api/search/users?inputUsername=${searchTerm}`
         )
           .then((res) => res.json())
           .then((data) => {
@@ -127,7 +129,7 @@ export default function Upload() {
       setUploading(true);
       const formData = new FormData();
       formData.append("pdf", selectedFile);
-      fetch("http://localhost:3001/api/upload/document", {
+      fetch(`${backendUrl}/api/upload/document`, {
         method: "POST",
         body: formData,
         headers: {
@@ -277,7 +279,6 @@ export default function Upload() {
 
   return (
     <div className="flex h-auto md:h-[85vh] text-white w-[92%] md:w-[98%] mx-auto">
-      {/* Left Section: Form and File Upload */}
       <FormProvider {...methods}>
         <form
           // onSubmit={}

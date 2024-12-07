@@ -25,7 +25,7 @@ export function LoginForm() {
 
     try {
       // Send login data to the backend API
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`, {
+      const response = await fetch("http://localhost:3001/api/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -46,12 +46,15 @@ export function LoginForm() {
         setError(data.message); // Show error message from backend
       }
     } catch (error) {
-      setError(`An error occurred during login. ${process.env.NEXT_PUBLIC_API_URL}`);
+      setError("An error occurred during login.");
     }
   };
 
   return (
-    <div className="w-full max-w-md font-[family-name:var(--space-mono)]">
+    <div className="w-[85%] md:w-full my-8 md:my-12 lg:my-16  max-w-md font-[family-name:var(--space-mono)]">
+      <a href="/">
+        <button className="px-4 py-2 rounded-xl bg-gray-800 mb-4">Back</button>
+      </a>
       <form onSubmit={handleSubmit}>
         <Card>
           <CardHeader className="space-y-1">

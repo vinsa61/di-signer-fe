@@ -51,16 +51,19 @@ export default function Video() {
         style={{ marginTop: "0" }}
       />
 
-      <div id="home" className="absolute top-0 left-0 w-full h-full grid grid-rows-2 md:grid-rows-1 grid-cols-1 md:grid-cols-3 px-4 md:px-7 items-center justify-center text-white font-[family-name:var(--space-mono)]">
+      <div
+        id="home"
+        className="absolute top-0 left-0 w-full h-full grid grid-rows-2 md:grid-rows-1 grid-cols-1 md:grid-cols-3 px-4 md:px-7 items-center justify-center text-white font-[family-name:var(--space-mono)]"
+      >
         <div className="flex flex-col h-full translate-y-1/4 md:col-span-2 md:pl-2 lg:pl-3 gap-5">
-          <div className="text-4xl md:text-4xl lg:text-6xl font-[family-name:var(--space-mono-bold)]">
-            Digital Signature Protocol
+          <div className="text-3xl md:text-4xl lg:text-6xl font-[family-name:var(--space-mono-bold)]">
+            DIGITAL SIGNATURE PROTOCOL
           </div>
           <div className="">
             An innovative approach to sign your documents with ease.
           </div>
         </div>
-        <div className="flex flex-col min-h-full items-center lg:items-start translate-y-1/3 md:col-span-1 md:pl-20 gap-5">
+        <div className="flex flex-col h-full items-center lg:items-start translate-y-1/3 md:col-span-1 md:pl-20 gap-5">
           <Image
             src="/logo-white.svg"
             alt="Di-Signer Logo"
@@ -75,6 +78,22 @@ export default function Video() {
             height={50}
             className="object-contain max-w-full h-auto block lg:hidden"
           />
+          <div className="flex flex-col gap-0 motion-safe:animate-bounce">
+            <Image
+              src="/double-dropdown.svg"
+              alt="Di-Signer Logo"
+              width={25}
+              height={25}
+              className="object-contain max-w-full h-auto block -translate-y-2 md:hidden filter-white"
+            />
+            <Image
+              src="/double-dropdown.svg"
+              alt="Di-Signer Logo"
+              width={25}
+              height={25}
+              className="object-contain max-w-full h-auto block -translate-y-6 md:hidden filter-white"
+            />
+          </div>
         </div>
       </div>
     </div>

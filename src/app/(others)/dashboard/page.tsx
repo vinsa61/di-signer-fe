@@ -1,15 +1,18 @@
+// page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation"; // Import Next.js router
 import { Request, Inbox, columns1, columns2 } from "./column";
 import { DataTable } from "./data-table";
 import Image from "next/image";
 
+const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+
 // Mock function to fetch Request data
 async function getInboxData(): Promise<Request[]> {
-
   const token = localStorage.getItem("token");
-  const data = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/search/mail`, {
+  const data = await fetch(`${backendUrl}/api/search/mail`, {
     method: "GET",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -27,7 +30,7 @@ async function getInboxData(): Promise<Request[]> {
 // Mock function to fetch Inbox data
 async function getRequestData(): Promise<Inbox[]> {
   const token = localStorage.getItem("token");
-  const data = await fetch("http://localhost:3001/api/search/requests", {
+  const data = await fetch(`${backendUrl}/api/search/requests`, {
     method: "GET",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -45,17 +48,23 @@ async function getRequestData(): Promise<Inbox[]> {
 export default function Dashboard() {
   const [activeTable, setActiveTable] = useState<"first" | "second">("first");
   const [data1, setData1] = useState<Request[]>([]);
-  const [data2, setData2] = useState<Inbox[]>([]); // Correctly define state for Inbox data
+  const [data2, setData2] = useState<Inbox[]>([]);
+  const router = useRouter(); // Initialize router
 
   useEffect(() => {
     const fetchData = async () => {
-      const inboxData = await getInboxData(); // FetchIRequest data
+      const inboxData = await getInboxData();
       setData1(inboxData);
-      const requestData = await getRequestData(); // Fetch Inbox data
+      const requestData = await getRequestData();
       setData2(requestData);
     };
     fetchData();
   }, []);
+
+  // Row click handler
+  const handleRowClick = (id: string) => {
+    router.push(`/dashboard/${id}`);
+  };
 
   return (
     <div className="container md:w-[98%] w-[92%] mx-auto py-10">
@@ -64,7 +73,7 @@ export default function Dashboard() {
           className={`flex items-center justify-center ${
             activeTable === "first" ? "bg-gray-700" : "bg-[#EDEDED]"
           } hover:bg-gray-500 p-1.5 w-12 rounded-2xl`}
-          onClick={() => setActiveTable("first")} // Set to show the first table
+          onClick={() => setActiveTable("first")}
         >
           <Image
             src="/letter.svg"
@@ -80,7 +89,7 @@ export default function Dashboard() {
           className={`flex items-center justify-center ${
             activeTable === "second" ? "bg-gray-700" : "bg-[#EDEDED]"
           } hover:bg-gray-500 p-1.5 w-12 rounded-2xl`}
-          onClick={() => setActiveTable("second")} // Set to show the second table
+          onClick={() => setActiveTable("second")}
         >
           <Image
             src="/send.svg"
@@ -95,9 +104,17 @@ export default function Dashboard() {
       </div>
 
       {activeTable === "first" ? (
-        <DataTable columns={columns1} data={data1} />
+        <DataTable
+          columns={columns1}
+          data={data1}
+          rowClickHandler={handleRowClick}
+        />
       ) : (
-        <DataTable columns={columns2} data={data2} />
+        <DataTable
+          columns={columns2}
+          data={data2}
+          rowClickHandler={handleRowClick}
+        />
       )}
     </div>
   );

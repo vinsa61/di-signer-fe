@@ -63,8 +63,8 @@ export default function PopUpNav({
           </Link>
         </div>
         <div className="w-full border-y border-gray-900 py-3 px-4">
-          <Link href="/upload" onClick={toggleNav}>
-            Upload File
+          <Link href="/request" onClick={toggleNav}>
+            Send Request
           </Link>
         </div>
         {username ? (
