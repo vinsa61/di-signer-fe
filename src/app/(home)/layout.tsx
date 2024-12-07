@@ -1,6 +1,5 @@
 "use client";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 // import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "../globals.css";
@@ -62,39 +61,6 @@ export default function RootLayout({
   };
 
   const [userData, setUserData] = useState<UserData | null>(null);
-
-  const router = useRouter();
-
-  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const token = window.localStorage.getItem("token");
-
-      fetch(`${backendUrl}/api/data/dashboard`, {
-        headers: {
-          Authorization: `Bearer ${token}`, // Pass the token in the header
-        },
-      })
-        .then((response) => {
-          if (!response.ok) {
-            return null;
-          }
-          return response.json();
-        })
-        .then((data) => {
-          if (data) {
-            console.log(data);
-            setUserData(data);
-          }
-        })
-        .catch((error) => {
-          console.error("Error fetching user data:", error);
-        });
-    }
-  }, [backendUrl]);
-
-  const user_name = userData?.username || "Guest";
 
   return (
     <html lang="en">
