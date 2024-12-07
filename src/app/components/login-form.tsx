@@ -20,12 +20,14 @@ export function LoginForm() {
   const [password, setPassword] = useState(""); // Track password input
   const [error, setError] = useState("");
 
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
       // Send login data to the backend API
-      const response = await fetch("http://localhost:3001/api/auth/login", {
+      const response = await fetch(`${backendUrl}/api/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -24,12 +24,14 @@ export function SignupForm() {
   const [error, setError] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
       // Send login data to the backend API
-      const response = await fetch("http://localhost:3001/api/auth/register", {
+      const response = await fetch(`${backendUrl}/api/auth/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

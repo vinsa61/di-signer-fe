@@ -37,7 +37,7 @@ export default function ShowDataPage() {
       }
     };
     fetchData();
-  }, [pathId]);
+  }, [backendUrl, pathId]);
 
   useEffect(() => {
     if (data?.Position) {

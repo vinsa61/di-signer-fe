@@ -55,9 +55,7 @@ export default function Upload() {
     const debounceSearch = setTimeout(() => {
       if (searchTerm) {
         setLoading(true);
-        fetch(
-          `${backendUrl}/api/search/users?inputUsername=${searchTerm}`
-        )
+        fetch(`${backendUrl}/api/search/users?inputUsername=${searchTerm}`)
           .then((res) => res.json())
           .then((data) => {
             setResults(data.users || []);
@@ -70,7 +68,7 @@ export default function Upload() {
     }, 300);
 
     return () => clearTimeout(debounceSearch);
-  }, [searchTerm]);
+  }, [backendUrl, searchTerm]);
 
   const handleUsernameClick = (username: string) => {
     setSearchTerm(username); // Set the clicked username to the input field

@@ -49,7 +49,7 @@ export default function Profile() {
         console.error(error);
         router.push("/login");
       });
-  }, [router]);
+  }, [backendUrl, router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;

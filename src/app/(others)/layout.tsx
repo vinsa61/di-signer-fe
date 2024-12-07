@@ -91,7 +91,7 @@ export default function RootLayout({
           router.push("/login");
         });
     }
-  }, [router]);
+  }, [backendUrl, router]);
 
   return (
     <html lang="en">
