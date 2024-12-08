@@ -24,32 +24,41 @@ export function SignupForm() {
   const [error, setError] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Check for empty fields
+    if (!firstName || !lastName || !username || !email || !password) {
+      setError("All fields are required.");
+      return; // Stop form submission if validation fails
+    }
+
     try {
-      // Send login data to the backend API
+      const formData = new FormData();
+
+      formData.append("firstName", firstName);
+      formData.append("lastName", lastName);
+      formData.append("email", email);
+      formData.append("username", username);
+      formData.append("password", password);
+
+      if (selectedFile) {
+        formData.append("signature", selectedFile);
+      }
+      if (!selectedFile) {
+        setError("Please upload a PNG signature.");
+        return;
+      }
+
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+
       const response = await fetch(`${backendUrl}/api/auth/register`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          firstName,
-          lastName,
-          email,
-          username,
-          password,
-        }),
+        body: formData,
       });
 
       const data = await response.json();
 
-      console.log(data.message); // Check if the error message is correct
-
-      // If the login is successful, save the token
       if (response.ok) {
         localStorage.setItem("token", data.token); // Store JWT in local storage
         alert("Register successful!");
@@ -182,6 +191,7 @@ export function SignupForm() {
               accept="image/png"
               className="hidden"
               onChange={handleFileChange}
+              required
             />
             <label
               htmlFor="fileInput"
@@ -206,7 +216,13 @@ export function SignupForm() {
             </div>
           )}
           <CardFooter className="flex flex-col">
-            <button className="w-full border-2 border-gray-300 rounded-md py-2 transition-all duration-500 ease-in-out hover:text-white hover:border-blue-600">
+            <button
+              className={`w-full border-2 border-gray-300 rounded-md py-2 transition-all duration-500 ease-in-out hover:text-white hover:border-blue-600 ${
+                !firstName || !lastName || !username || !email || !password
+                  ? "opacity-50 cursor-not-allowed"
+                  : ""
+              }`}
+            >
               Register
             </button>
           </CardFooter>

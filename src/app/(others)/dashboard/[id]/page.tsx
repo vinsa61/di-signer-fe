@@ -13,23 +13,48 @@ export default function ShowDataPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const [fileUrl, setFileUrl] = useState<string | null>(null);
+  const [isSender, setIsSender] = useState(0);
+
   const [scaledX, setScaledX] = useState(0);
   const [scaledY, setScaledY] = useState(0);
   const [scaledW, setScaledW] = useState(0);
   const [scaledH, setScaledH] = useState(50);
 
-  const isSender = data?.IsSender;
-  const isAccepted = data?.Status === "Accepted";
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+
+  // let isSender = 0;
+  let isAccepted = "";
 
   useEffect(() => {
     // Fetch data from the API
     const fetchData = async () => {
+      const token = localStorage.getItem("token");
       try {
-        const response = await fetch(`${backendUrl}/api/sign/${pathId}`);
-        if (!response.ok) throw new Error("Failed to fetch data");
+        const response = await fetch(`${backendUrl}/1/api/search/mail-data`, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token} ${pathId}`,
+          },
+        });
+
+        if (!response.ok) throw new Error(`Failed to fetch data ${pathId}`);
+
         const result = await response.json();
+
         setData(result.data);
+
+        if (result.data.file) {
+          const pdfFile = `data:application/pdf;base64,${result.data.file}`;
+
+          setFileUrl(pdfFile);
+        }
+
+        console.log(result.data);
+
+        setIsSender(result.data.isSender);
+        // isAccepted = data?.Status === "Accepted";
+
         setLoading(false);
       } catch (err: any) {
         setError(err.message);
@@ -37,7 +62,7 @@ export default function ShowDataPage() {
       }
     };
     fetchData();
-  }, [backendUrl, pathId]);
+  }, [pathId]);
 
   useEffect(() => {
     if (data?.Position) {
@@ -108,7 +133,7 @@ export default function ShowDataPage() {
       </div>
       <div className="w-full pt-[30px]">
         <div className="flex max-md:flex-col justify-between">
-          <h1 className="font-bold text-xl">{data?.Topic || "No Topic"}</h1>
+          <h1 className="font-bold text-xl">{data?.content || "No Topic"}</h1>
           <div
             className={
               data?.Status === "Accepted"
@@ -119,17 +144,13 @@ export default function ShowDataPage() {
             }
           >
             <span className="text-sm font-medium">
-              {data?.Status || "Unknown"}
+              {data?.status || "Unknown"}
             </span>
           </div>
         </div>
-        <p className="text-sm mt-3">
-          {isSender ? "To: " : "From: "} {data?.Username} {"<"}
-          {data?.Email}
-          {">"}
-        </p>
-        <p className="text-md mt-[30px] max-w-full break-words">
-          {data?.CoverLetter || "No additional details provided."}
+        <p className="text-base mt-3">
+          {isSender ? "To: " : "From: "} {data?.receiverUsername}
+          {data?.senderEmail}
         </p>
         <div className="flex items-center justify-between mt-8 gap-2 mb-4 lg:w-[75%] w-full 2xl:w-[50%]">
           <h1>File Preview</h1>
@@ -144,19 +165,19 @@ export default function ShowDataPage() {
         </div>
 
         <div className="lg:w-[75%] w-full 2xl:w-[50%] max-md:h-[45vh] h-[80vh] bg-gray-100 p-4 border-2 border-gray-700 overflow-auto">
-          {data?.Document ? (
-            <Worker
-              workerUrl={`https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js`}
-            >
+          <Worker
+            workerUrl={`https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js`}
+          >
+            {fileUrl ? (
               <Viewer
-                fileUrl={data.Document}
+                fileUrl={fileUrl}
                 defaultScale={SpecialZoomLevel.PageFit}
                 renderPage={renderPage}
               />
-            </Worker>
-          ) : (
-            <p className="text-center text-gray-500">No file available</p>
-          )}
+            ) : (
+              <p className="text-center text-gray-500">No file available</p>
+            )}
+          </Worker>
         </div>
       </div>
     </section>

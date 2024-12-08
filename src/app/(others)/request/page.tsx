@@ -68,7 +68,7 @@ export default function Upload() {
     }, 300);
 
     return () => clearTimeout(debounceSearch);
-  }, [backendUrl, searchTerm]);
+  }, [searchTerm]);
 
   const handleUsernameClick = (username: string) => {
     setSearchTerm(username); // Set the clicked username to the input field
@@ -109,6 +109,7 @@ export default function Upload() {
       if (file.type === "application/pdf") {
         setSelectedFile(file);
         setFileUrl(URL.createObjectURL(file));
+        console.log(`huh ${fileUrl}`);
       } else {
         alert("Upload a valid PDF file.");
       }
@@ -116,7 +117,7 @@ export default function Upload() {
   };
 
   const handleUploadClick = () => {
-    if (selectedFile) {
+    if (selectedFile && selection) {
       const token = localStorage.getItem("token");
 
       if (!token) {
@@ -124,14 +125,19 @@ export default function Upload() {
         return;
       }
 
+      console.log(
+        `${selection.x} ${selection.y} ${selection.w} ${selection.height}`
+      );
+
       setUploading(true);
       const formData = new FormData();
       formData.append("pdf", selectedFile);
+
       fetch(`${backendUrl}/api/upload/document`, {
         method: "POST",
         body: formData,
         headers: {
-          Authorization: `Bearer ${token} ${selectedUsername}`,
+          Authorization: `Bearer ${token} ${selectedUsername} ${selection.x} ${selection.y} ${selection.w} ${selection.height}`,
           Message: topic,
         },
       })
