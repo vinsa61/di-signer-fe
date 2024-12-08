@@ -36,6 +36,7 @@ export default function ShowDataPage() {
           headers: {
             Authorization: `Bearer ${token} ${pathId}`,
           },
+          credentials: "include",
         });
 
         if (!response.ok) throw new Error(`Failed to fetch data ${pathId}`);
