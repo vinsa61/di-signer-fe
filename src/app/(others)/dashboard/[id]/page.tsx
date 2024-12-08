@@ -21,17 +21,17 @@ export default function ShowDataPage() {
   const [scaledW, setScaledW] = useState(0);
   const [scaledH, setScaledH] = useState(50);
 
-  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
-
   // let isSender = 0;
   let isAccepted = "";
+
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
 
   useEffect(() => {
     // Fetch data from the API
     const fetchData = async () => {
       const token = localStorage.getItem("token");
       try {
-        const response = await fetch(`${backendUrl}/1/api/search/mail-data`, {
+        const response = await fetch(`${backendUrl}/api/search/mail-data`, {
           method: "GET",
           headers: {
             Authorization: `Bearer ${token} ${pathId}`,

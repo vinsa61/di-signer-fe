@@ -107,11 +107,13 @@ export const columns2: ColumnDef<Inbox>[] = [
   },
 ];
 
+const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+
 const handleAccept = (id: string) => {
   console.log("Accepted request with id:", id);
 
   try {
-    fetch("http://localhost:3001/api/generate/signed", {
+    fetch(`${backendUrl}/api/generate/signed`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -134,7 +136,6 @@ const handleAccept = (id: string) => {
     alert(error);
   }
 };
-const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
 
 const handleDeny = (id: string) => {
   console.log("Denied request with id:", id);

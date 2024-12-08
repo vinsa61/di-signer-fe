@@ -1,7 +1,6 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-// import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "../globals.css";
 import Navbar from "../components/nav";
@@ -78,6 +77,7 @@ export default function RootLayout({
       })
         .then((response) => {
           if (!response.ok) {
+            // console.error("Failed to fetch user data");
             return null;
           }
           return response.json();
@@ -92,7 +92,7 @@ export default function RootLayout({
           console.error("Error fetching user data:", error);
         });
     }
-  }, [backendUrl]);
+  }, []);
 
   const user_name = userData?.username || "Guest";
 

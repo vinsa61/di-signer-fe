@@ -24,6 +24,8 @@ export function SignupForm() {
   const [error, setError] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -49,8 +51,6 @@ export function SignupForm() {
         setError("Please upload a PNG signature.");
         return;
       }
-
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
 
       const response = await fetch(`${backendUrl}/api/auth/register`, {
         method: "POST",
