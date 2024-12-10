@@ -125,9 +125,19 @@ export default function Upload() {
         return;
       }
 
-      console.log(
-        `${selection.x} ${selection.y} ${selection.w} ${selection.height}`
-      );
+      const page = document.getElementById("preview-page");
+      if (!page) return;
+
+      const rect = page.getBoundingClientRect();
+
+      const scaleX = 595 / rect.width;
+      const scaleY = 842 / rect.height;
+
+      const scaledX = selection.x * scaleX;
+      const scaledY = selection.y * scaleY;
+      const scaledW = selection.w * scaleX;
+      const scaledH = selection.height * scaleY;
+      console.log(`${scaledX} ${scaledY} ${scaledW} ${scaledH}`);
 
       setUploading(true);
       const formData = new FormData();
@@ -137,7 +147,7 @@ export default function Upload() {
         method: "POST",
         body: formData,
         headers: {
-          Authorization: `Bearer ${token} ${selectedUsername} ${selection.x} ${selection.y} ${selection.w} ${selection.height}`,
+          Authorization: `Bearer ${token} ${selectedUsername} ${scaledX} ${scaledY} ${scaledW} ${scaledH}`,
           Message: topic,
         },
       })
