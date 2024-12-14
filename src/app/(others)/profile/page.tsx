@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 
 export default function Profile() {
   interface UserData {
@@ -74,11 +75,11 @@ export default function Profile() {
       }
 
       const result = await response.json();
-      alert("Changes saved successfully!");
+      toast.success("Changes saved successfully!");
       console.log("Updated data:", result);
     } catch (error) {
       console.error("Error updating data:", error);
-      alert("Failed to save changes.");
+      toast.error("Failed to save changes.");
     }
   };
 

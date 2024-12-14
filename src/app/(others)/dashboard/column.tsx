@@ -1,6 +1,7 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
+import toast from "react-hot-toast";
 
 export type Request = {
   id: string;
@@ -122,18 +123,19 @@ const handleAccept = (id: string) => {
     })
       .then((response) => response.json())
       .then((data) => {
-        alert("File signed successfully");
+        // toast.success("File signed successfully");
+        window.location.href = "/dashboard?acceptSuccess=true";
       })
       .catch((error) => {
         console.error("Error signing file:", error);
-        alert(error);
+        toast.error(error);
       })
       .finally(() => {
         // setUploading(false);
       });
   } catch (error) {
     console.log(error);
-    alert(error);
+    toast.error(`${error}`);
   }
 };
 
@@ -150,16 +152,18 @@ const handleDeny = (id: string) => {
     })
       .then((response) => response.json())
       .then((data) => {
-        alert("Request denied successfully");
+        // toast.success("Request denied successfully");
+        // window.location.href = "/dashboard?denySuccess=true";
       })
       .catch((error) => {
         console.error("Error denying file:", error);
-        alert(error);
+        toast.error(error);
       });
   } catch (error) {
     console.log(error);
-    alert(error);
+    toast.error(`${error}`);
   }
+  window.location.href = "/dashboard?denySuccess=true";
 };
 
 const handleDownload = async (id: string) => {
@@ -172,7 +176,7 @@ const handleDownload = async (id: string) => {
 
     if (!response.ok) {
       const error = await response.json();
-      alert(`Error: ${error.message}`);
+      toast.error(`Error: ${error.message}`);
       console.error("Download failed:", error);
       return;
     }
@@ -188,9 +192,9 @@ const handleDownload = async (id: string) => {
     link.remove();
     window.URL.revokeObjectURL(url);
 
-    alert("File should be downloading shortly!");
+    toast.success("File should be downloading shortly!");
   } catch (error) {
     console.error("Error downloading file:", error);
-    alert(`Failed to download requested file: ${error}`);
+    toast.error(`Failed to download requested file: ${error}`);
   }
 };

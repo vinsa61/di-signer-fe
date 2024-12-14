@@ -1,15 +1,13 @@
-// page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation"; // Import Next.js router
+import { useRouter } from "next/navigation";
 import { Request, Inbox, columns1, columns2 } from "./column";
 import { DataTable } from "./data-table";
 import Image from "next/image";
+import toast from "react-hot-toast";
 
 const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
-
-// Mock function to fetch Request data
 async function getInboxData(): Promise<Request[]> {
   const token = localStorage.getItem("token");
   const data = await fetch(`${backendUrl}/api/search/mail`, {
@@ -20,10 +18,9 @@ async function getInboxData(): Promise<Request[]> {
   });
 
   if (!data.ok) {
-    alert("Error in fetching request data");
+    toast.error("Error in fetching request data");
     throw new Error("Failed to fetch Request data");
   }
-
   return data.json();
 }
 
@@ -38,10 +35,9 @@ async function getRequestData(): Promise<Inbox[]> {
   });
 
   if (!data.ok) {
-    alert("Error in fetching request data");
+    toast.error("Error in fetching request data");
     throw new Error("Failed to fetch Request data");
   }
-
   return data.json();
 }
 
@@ -49,7 +45,7 @@ export default function Dashboard() {
   const [activeTable, setActiveTable] = useState<"first" | "second">("first");
   const [data1, setData1] = useState<Request[]>([]);
   const [data2, setData2] = useState<Inbox[]>([]);
-  const router = useRouter(); // Initialize router
+  const router = useRouter();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -61,7 +57,6 @@ export default function Dashboard() {
     fetchData();
   }, []);
 
-  // Row click handler
   const handleRowClick = (id: string) => {
     router.push(`/dashboard/${id}`);
   };

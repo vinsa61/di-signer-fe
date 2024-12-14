@@ -1,27 +1,10 @@
-// data-table.tsx
-
-"use client";
-
-import {
-  ColumnDef,
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
-
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { ColumnDef, useReactTable, flexRender, getCoreRowModel } from "@tanstack/react-table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
-  rowClickHandler?: (id: string) => void; // Add a handler for row clicks
+  rowClickHandler?: (id: string) => void;
 }
 
 export function DataTable<TData extends { id: string }, TValue>({
@@ -34,6 +17,13 @@ export function DataTable<TData extends { id: string }, TValue>({
     columns,
     getCoreRowModel: getCoreRowModel(),
   });
+
+  const handleRowClick = (e: React.MouseEvent, id: string) => {
+    if ((e.target as HTMLElement).closest('.action-column')) {
+      return;
+    }
+    rowClickHandler?.(id);
+  };
 
   return (
     <div className="rounded-md border">
@@ -62,11 +52,14 @@ export function DataTable<TData extends { id: string }, TValue>({
               <TableRow
                 key={row.id}
                 data-state={row.getIsSelected() && "selected"}
-                onClick={() => rowClickHandler?.(row.original.id)}
+                onClick={(e) => handleRowClick(e, row.original.id)}
                 className="cursor-pointer"
               >
                 {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id}>
+                  <TableCell
+                    key={cell.id}
+                    className={cell.column.id === 'action' ? 'action-column' : ''}
+                  >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </TableCell>
                 ))}

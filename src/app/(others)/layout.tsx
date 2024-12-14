@@ -6,6 +6,9 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Navbar from "../components/nav";
 import PopUpNav from "../components/pop-up-nav";
+import ToasterCustom from "@/app/components/toaster-custom";
+import { useSearchParams } from "next/navigation";
+import toast from "react-hot-toast";
 
 const geistSans = localFont({
   src: "../fonts/GeistVF.woff",
@@ -92,6 +95,24 @@ export default function RootLayout({
         });
     }
   }, [router]);
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const handleSuccessMessage = (param: string, message: string) => {
+      if (searchParams.get(param) === "true") {
+        toast.success(message);
+        const url = new URL(window.location.href);
+        url.searchParams.delete(param);
+        window.history.replaceState({}, document.title, url.toString());
+      }
+    };
+
+    handleSuccessMessage("loginSuccess", "Welcome back!");
+    handleSuccessMessage("registerSuccess", "Registration Successful!");
+    handleSuccessMessage("requestSuccess", "Request Successful!");
+    handleSuccessMessage("acceptSuccess", "Accept Successful!");
+    handleSuccessMessage("denySuccess", "Deny Successful!");
+  }, [searchParams]);
 
   return (
     <html lang="en">
@@ -102,6 +123,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${spaceMono.variable} ${spaceMonoBold.variable} antialiased bg-black dark font-[family-name:var(--space-mono)]`}
       >
+        <ToasterCustom />
         <Navbar
           username={userData ? userData.username : ""}
           toggleNav={toggleNav}

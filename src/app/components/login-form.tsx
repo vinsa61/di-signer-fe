@@ -16,8 +16,8 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 
 export function LoginForm() {
-  const [email, setEmail] = useState(""); // Track email input
-  const [password, setPassword] = useState(""); // Track password input
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
@@ -26,7 +26,6 @@ export function LoginForm() {
     e.preventDefault();
 
     try {
-      // Send login data to the backend API
       const response = await fetch(`${backendUrl}/api/auth/login`, {
         method: "POST",
         headers: {
@@ -37,15 +36,13 @@ export function LoginForm() {
 
       const data = await response.json();
 
-      console.log(data.message); // Check if the error message is correct
+      console.log(data.message);
 
-      // If the login is successful, save the token
       if (response.ok) {
-        localStorage.setItem("token", data.token); // Store JWT in local storage
-        alert("Login successful!");
-        window.location.href = "/dashboard";
+        localStorage.setItem("token", data.token);
+        window.location.href = "/dashboard?loginSuccess=true";
       } else {
-        setError(data.message); // Show error message from backend
+        setError(data.message);
       }
     } catch (error) {
       setError("An error occurred during login.");

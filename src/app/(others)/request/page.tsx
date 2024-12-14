@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import "@react-pdf-viewer/core/lib/styles/index.css";
 import { Worker, Viewer, SpecialZoomLevel } from "@react-pdf-viewer/core";
 import { useForm, FormProvider } from "react-hook-form";
+import toast from "react-hot-toast";
 
 type SignUpRequest = {
   recipient: string;
@@ -36,7 +37,6 @@ export default function Upload() {
   const [isMdScreen, setIsMdScreen] = useState(false);
   const animationFrameId = useRef<number | null>(null);
   const methods = useForm<SignUpRequest>({ mode: "onChange" });
-  const { handleSubmit } = methods;
 
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
 
@@ -71,17 +71,16 @@ export default function Upload() {
   }, [searchTerm]);
 
   const handleUsernameClick = (username: string) => {
-    setSearchTerm(username); // Set the clicked username to the input field
-    setSelectedUsername(username); // Optionally save the selected username
+    setSearchTerm("");
+    setSelectedUsername(username);
     setDropdownOpen(false);
   };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      // Type assertion to narrow the type of event.target to Node
       const target = event.target as Node;
       if (dropdownRef.current && !dropdownRef.current.contains(target)) {
-        setDropdownOpen(false); // Close the dropdown if clicked outside
+        setDropdownOpen(false);
       }
     };
 
@@ -93,14 +92,14 @@ export default function Upload() {
 
   const handleInputClick = () => {
     if (searchTerm) {
-      setDropdownOpen(true); // Open dropdown when the input is clicked and there is a search term
+      setDropdownOpen(true);
     }
   };
 
   const handleClearInput = () => {
-    setSearchTerm(""); // Clear the search term
-    setSelectedUsername(""); // Clear the selected username
-    setDropdownOpen(false); // Close the dropdown
+    setSearchTerm("");
+    setSelectedUsername("");
+    setDropdownOpen(false);
   };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -111,7 +110,7 @@ export default function Upload() {
         setFileUrl(URL.createObjectURL(file));
         console.log(`huh ${fileUrl}`);
       } else {
-        alert("Upload a valid PDF file.");
+        toast.error("Upload a valid PDF file.");
       }
     }
   };
@@ -121,7 +120,7 @@ export default function Upload() {
       const token = localStorage.getItem("token");
 
       if (!token) {
-        alert("User is not logged in.");
+        toast.error("User is not logged in.");
         return;
       }
 
@@ -153,25 +152,22 @@ export default function Upload() {
       })
         .then((response) => response.json())
         .then((data) => {
-          alert("File uploaded successfully!");
-          const link = document.createElement("a");
-          link.href = "/dashboard";
-          link.click();
+          // toast.success("File uploaded successfully!");
+          window.location.href = "/dashboard?requestSuccess=true";
           setFileUrl(data.fileUrl);
         })
         .catch((error) => {
           console.error("Error uploading file:", error);
-          alert(error);
+          toast.error(error);
         })
         .finally(() => {
           setUploading(false);
         });
     } else {
-      alert("No file selected.");
+      toast.error("No file selected.");
     }
   };
 
-  // Drag-and-drop handler
   const handleDrop = (event: React.DragEvent) => {
     event.preventDefault();
     if (event.dataTransfer.files && event.dataTransfer.files[0]) {
@@ -268,7 +264,7 @@ export default function Upload() {
             top: selection.y,
             width: selection.w,
             height: selection.height,
-            border: "2px dashed blue",
+            border: "2px groove black",
             backgroundColor: "rgba(0, 0, 255, 0.1)",
             pointerEvents: "none",
           }}
@@ -282,7 +278,7 @@ export default function Upload() {
             top: selection.y,
             width: selection.w,
             height: selection.height,
-            border: "2px dashed red",
+            border: "2px groove black",
             backgroundColor: "rgba(255, 0, 0, 0.1)",
             pointerEvents: "none",
           }}
@@ -294,10 +290,7 @@ export default function Upload() {
   return (
     <div className="flex h-auto md:h-[85vh] text-white w-[92%] md:w-[98%] mx-auto">
       <FormProvider {...methods}>
-        <form
-          // onSubmit={}
-          className="w-full md:w-1/2 p-8 flex flex-col items-start border-x border-b border-gray-700"
-        >
+        <form className="w-full md:w-1/2 p-8 flex flex-col items-start border-x border-b border-gray-700">
           <h2 className="text-2xl md:text-3xl mb-6">Upload PDF</h2>
 
           {/* Search input */}
@@ -310,6 +303,16 @@ export default function Upload() {
               onChange={(e) => {
                 setSearchTerm(e.target.value);
                 handleInputClick();
+              }}
+              onFocus={() => {
+                if (selectedUsername) {
+                  setSearchTerm(selectedUsername);
+                }
+              }}
+              onInput={() => {
+                if (selectedUsername && searchTerm !== selectedUsername) {
+                  setSelectedUsername("");
+                }
               }}
               className="search-input text-black pl-4 pr-4 w-full border border-gray-300 rounded-md h-10"
             />
@@ -350,6 +353,7 @@ export default function Upload() {
               </div>
             )}
           </div>
+
           <h2 className="text-base md:text-lg mb-2">Topic</h2>
           <input
             type="text"
@@ -415,7 +419,13 @@ export default function Upload() {
 
           <button
             onClick={handleUploadClick}
-            disabled={!selectedFile || uploading}
+            disabled={
+              !selectedFile ||
+              !selectedUsername ||
+              !topic ||
+              !selection ||
+              uploading
+            }
             className="mt-4 px-6 py-2 bg-blue-500 text-white rounded disabled:bg-gray-500"
           >
             {uploading ? "Uploading..." : "Send Request"}

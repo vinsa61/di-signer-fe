@@ -14,13 +14,14 @@ import {
 
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import toast from "react-hot-toast";
 
 export function SignupForm() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [username, setUsername] = useState("");
-  const [email, setEmail] = useState(""); // Track email input
-  const [password, setPassword] = useState(""); // Track password input
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
@@ -29,10 +30,16 @@ export function SignupForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Check for empty fields
     if (!firstName || !lastName || !username || !email || !password) {
       setError("All fields are required.");
-      return; // Stop form submission if validation fails
+      toast.error("All fields are required.");
+      return;
+    }
+
+    if (/\s/.test(username)) {
+      setError("Username cannot contain spaces.");
+      toast.error("Username cannot contain spaces.");
+      return;
     }
 
     try {
@@ -48,7 +55,8 @@ export function SignupForm() {
         formData.append("signature", selectedFile);
       }
       if (!selectedFile) {
-        setError("Please upload a PNG signature.");
+        setError("Signature not uploaded.");
+        toast.error("Please upload your signature!");
         return;
       }
 
@@ -60,14 +68,14 @@ export function SignupForm() {
       const data = await response.json();
 
       if (response.ok) {
-        localStorage.setItem("token", data.token); // Store JWT in local storage
-        alert("Register successful!");
-        window.location.href = "/dashboard";
+        localStorage.setItem("token", data.token);
+        window.location.href = "/dashboard?registerSuccess=true";
       } else {
-        setError(data.message); // Show error message from backend
+        setError(data.message);
+        toast.error(data.message);
       }
     } catch (error) {
-      setError("An error occurred during register.");
+      toast.error("An error occurred during register.");
     }
   };
 
@@ -91,12 +99,20 @@ export function SignupForm() {
         const blobUrl = URL.createObjectURL(file);
         // setFileUrl(blobUrl);
       } else if (file.size > maxFileSize) {
-        alert("File size exceeds the 2MB limit.");
+        toast.error("File size exceeds the 2MB limit.");
       } else {
-        alert("Please upload a valid png file.");
+        toast.error("Please upload a valid png file.");
       }
     }
   };
+
+  const isRegisterDisabled =
+    !firstName ||
+    !lastName ||
+    !username ||
+    /\s/.test(username) ||
+    !email ||
+    !password;
 
   return (
     <div className="w-[85%] md:w-full my-8 md:my-12 lg:my-16 max-w-md font-[family-name:var(--space-mono)]">
@@ -111,7 +127,7 @@ export function SignupForm() {
               Enter your details to create a new account
             </CardDescription>
 
-            {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+            {/* {error && <p className="text-red-500 text-sm mt-2">{error}</p>} */}
           </CardHeader>
 
           <CardContent className="space-y-4">
@@ -152,6 +168,11 @@ export function SignupForm() {
                 onChange={(e) => setUsername(e.target.value)}
                 required
               />
+              {/\s/.test(username) && (
+                <p className="text-red-500 text-sm mt-2">
+                  Username cannot contain spaces.
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -191,7 +212,6 @@ export function SignupForm() {
               accept="image/png"
               className="hidden"
               onChange={handleFileChange}
-              required
             />
             <label
               htmlFor="fileInput"
@@ -218,10 +238,9 @@ export function SignupForm() {
           <CardFooter className="flex flex-col">
             <button
               className={`w-full border-2 border-gray-300 rounded-md py-2 transition-all duration-500 ease-in-out hover:text-white hover:border-blue-600 ${
-                !firstName || !lastName || !username || !email || !password
-                  ? "opacity-50 cursor-not-allowed"
-                  : ""
+                isRegisterDisabled ? "opacity-50 cursor-not-allowed" : ""
               }`}
+              disabled={isRegisterDisabled}
             >
               Register
             </button>
