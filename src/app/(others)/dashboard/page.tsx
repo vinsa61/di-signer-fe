@@ -6,6 +6,8 @@ import { Request, Inbox, columns1, columns2 } from "./column";
 import { DataTable } from "./data-table";
 import Image from "next/image";
 import toast from "react-hot-toast";
+import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 
 const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
 async function getInboxData(): Promise<Request[]> {
@@ -41,7 +43,7 @@ async function getRequestData(): Promise<Inbox[]> {
   return data.json();
 }
 
-export default function Dashboard() {
+const Dashboard = () => {
   const [activeTable, setActiveTable] = useState<"first" | "second">("first");
   const [data1, setData1] = useState<Request[]>([]);
   const [data2, setData2] = useState<Inbox[]>([]);
@@ -60,7 +62,24 @@ export default function Dashboard() {
   const handleRowClick = (id: string) => {
     router.push(`/dashboard/${id}`);
   };
+  const searchParams = useSearchParams();
 
+  useEffect(() => {
+    const handleSuccessMessage = (param: string, message: string) => {
+      if (searchParams.get(param) === "true") {
+        toast.success(message);
+        const url = new URL(window.location.href);
+        url.searchParams.delete(param);
+        window.history.replaceState({}, document.title, url.toString());
+      }
+    };
+
+    handleSuccessMessage("loginSuccess", "Welcome back!");
+    handleSuccessMessage("registerSuccess", "Registration Successful!");
+    handleSuccessMessage("requestSuccess", "Request Successful!");
+    handleSuccessMessage("acceptSuccess", "Accept Successful!");
+    handleSuccessMessage("denySuccess", "Deny Successful!");
+  }, [searchParams]);
   return (
     <div className="container md:w-[98%] w-[92%] mx-auto py-10">
       <div className="flex gap-2 mb-4">
@@ -112,5 +131,13 @@ export default function Dashboard() {
         />
       )}
     </div>
+  );
+};
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <Dashboard />
+    </Suspense>
   );
 }
