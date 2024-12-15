@@ -153,7 +153,7 @@ const handleDeny = (id: string) => {
       .then((response) => response.json())
       .then((data) => {
         // toast.success("Request denied successfully");
-        // window.location.href = "/dashboard?denySuccess=true";
+        window.location.href = "/dashboard?denySuccess=true";
       })
       .catch((error) => {
         console.error("Error denying file:", error);
@@ -163,7 +163,6 @@ const handleDeny = (id: string) => {
     console.log(error);
     toast.error(`${error}`);
   }
-  window.location.href = "/dashboard?denySuccess=true";
 };
 
 const handleDownload = async (id: string) => {
