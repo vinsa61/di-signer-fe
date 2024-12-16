@@ -90,18 +90,24 @@ export const columns2: ColumnDef<Inbox>[] = [
   },
   {
     id: "action",
-    header: "Action",
+    header: "Download",
     cell: ({ row }) => (
       <div className="flex gap-3">
+        <button
+          onClick={() => handleBaseDownload(row.original.id)}
+          className="py-1 px-3 border border-white bg-black"
+        >
+          Base File
+        </button>
         {row.original.status === "Accepted" ? (
           <button
-            onClick={() => handleDownload(row.original.id)}
+            onClick={() => handleSignedDownload(row.original.id)}
             className="py-1 px-3 border border-white bg-black"
           >
-            Download
+            Signed File
           </button>
         ) : (
-          <span className="text-gray-500 italic">No actions available</span>
+          <span className="text-gray-500 italic"></span>
         )}
       </div>
     ),
@@ -114,14 +120,21 @@ const handleAccept = (id: string) => {
   console.log("Accepted request with id:", id);
 
   try {
-    fetch(`${backendUrl}/api/generate/signed`, {
+    fetch(`${backendUrl}/api/generate/sign`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ id }),
     })
-      .then((response) => response.json())
+      .then((response) => {
+        if (!response.ok) {
+          return response.json().then((errorData) => {
+            throw new Error(errorData.message || `Error: ${response.status}`);
+          });
+        }
+        return response.json();
+      })
       .then((data) => {
         // toast.success("File signed successfully");
         window.location.href = "/dashboard?acceptSuccess=true";
@@ -165,13 +178,16 @@ const handleDeny = (id: string) => {
   }
 };
 
-const handleDownload = async (id: string) => {
+const handleSignedDownload = async (id: string) => {
   console.log("Downloading request with id:", id);
 
   try {
-    const response = await fetch(`${backendUrl}/api/generate/download/${id}`, {
-      method: "GET",
-    });
+    const response = await fetch(
+      `${backendUrl}/api/generate/download-signed/${id}`,
+      {
+        method: "GET",
+      }
+    );
 
     if (!response.ok) {
       const error = await response.json();
@@ -185,7 +201,43 @@ const handleDownload = async (id: string) => {
 
     const link = document.createElement("a");
     link.href = url;
-    link.download = `${id}.pdf`;
+    link.download = `signed-${id}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+
+    toast.success("File should be downloading shortly!");
+  } catch (error) {
+    console.error("Error downloading file:", error);
+    toast.error(`Failed to download requested file: ${error}`);
+  }
+};
+
+const handleBaseDownload = async (id: string) => {
+  console.log("Downloading request with id:", id);
+
+  try {
+    const response = await fetch(
+      `${backendUrl}/api/generate/download-unsigned/${id}`,
+      {
+        method: "GET",
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      toast.error(`Error: ${error.message}`);
+      console.error("Download failed:", error);
+      return;
+    }
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `base-${id}.pdf`;
     document.body.appendChild(link);
     link.click();
     link.remove();
