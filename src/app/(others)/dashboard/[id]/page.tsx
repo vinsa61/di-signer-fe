@@ -295,7 +295,7 @@ export default function ShowDataPage() {
               Download Base File
             </button>
           </a>
-          {isAccepted === "Accepted" && (
+          {/* {isAccepted === "Accepted" && (
             <a href="">
               <button
                 onClick={() => handleDownload()}
@@ -304,7 +304,7 @@ export default function ShowDataPage() {
                 Download Signed File
               </button>
             </a>
-          )}
+          )} */}
         </div>
       </div>
     </section>

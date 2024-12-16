@@ -60,7 +60,24 @@ export const columns1: ColumnDef<Request>[] = [
             </button>
           </>
         ) : (
-          <span className="text-gray-500 italic">No actions available</span>
+          <div className="flex gap-3">
+            <button
+              onClick={() => handleBaseDownload(row.original.id)}
+              className="py-1 px-3 border border-white bg-black"
+            >
+              Base File
+            </button>
+            {row.original.status === "Accepted" ? (
+              <button
+                onClick={() => handleSignedDownload(row.original.id)}
+                className="py-1 px-3 border border-white bg-black"
+              >
+                Signed File
+              </button>
+            ) : (
+              <span className="text-gray-500 italic"></span>
+            )}
+          </div>
         )}
       </div>
     ),
