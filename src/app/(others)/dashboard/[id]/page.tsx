@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import "@react-pdf-viewer/core/lib/styles/index.css";
 import { Worker, Viewer, SpecialZoomLevel } from "@react-pdf-viewer/core";
 import toast from "react-hot-toast";
+import { set } from "react-hook-form";
 
 export default function ShowDataPage() {
   const path = usePathname();
@@ -17,19 +18,20 @@ export default function ShowDataPage() {
   const [fileUrl, setFileUrl] = useState<string | null>(null);
   const [isSender, setIsSender] = useState(0);
   const [selection, setSelection] = useState<{
+    // [pageNumber: number]: {
     x: number;
     y: number;
     w: number;
     h: number;
+    page: number;
+    // };
   } | null>(null);
 
   const [scaledX, setScaledX] = useState(0);
   const [scaledY, setScaledY] = useState(0);
   const [scaledW, setScaledW] = useState(0);
   const [scaledH, setScaledH] = useState(50);
-
-  // let isSender = 0;
-  let isAccepted = "";
+  const [isAccepted, setIsAccepted] = useState<string | null>(null);
 
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
 
@@ -89,12 +91,27 @@ export default function ShowDataPage() {
         setData(result.data);
 
         if (result.data.x && result.data.y && result.data.w && result.data.h) {
-          setSelection({
+          console.log(
+            "Values:",
+            result.data.x,
+            result.data.y,
+            result.data.w,
+            result.data.h,
+            result.data.page
+          );
+          setSelection(() => ({
+            // [result.data.page]: {
             x: result.data.x,
             y: result.data.y,
             w: result.data.w,
             h: result.data.h,
-          });
+            page: result.data.page,
+            // },
+          }));
+          setScaledX(result.data.x);
+          setScaledY(result.data.y);
+          setScaledW(result.data.w);
+          setScaledH(result.data.h);
         }
 
         if (result.data.file) {
@@ -103,10 +120,8 @@ export default function ShowDataPage() {
           setFileUrl(pdfFile);
         }
 
-        console.log(result.data);
         setIsSender(result.data.isSender);
-        // isAccepted = data?.Status === "Accepted";
-
+        setIsAccepted(result.data.status);
         setLoading(false);
       } catch (err: any) {
         setError(err.message);
@@ -116,23 +131,36 @@ export default function ShowDataPage() {
     fetchData();
   }, [pathId]);
 
+  useEffect(() => {
+    const page = document.getElementById("preview-page");
+    if (!page) {
+      return;
+    }
+    const rect = page.getBoundingClientRect();
+    const scaleX = 595 / rect.width;
+    const scaleY = 842 / rect.height;
+    console.log("Scale values:", scaleX, scaleY);
+    if (selection) {
+      setScaledX(scaledX / scaleX);
+      setScaledY(scaledY / scaleY);
+      setScaledW(scaledW / scaleX);
+      setScaledH(scaledH / scaleY);
+      console.log(
+        "Scaled values:",
+        scaledX,
+        scaledY,
+        scaledW,
+        scaledH,
+        selection.page
+      );
+    }
+  }, [selection]);
+
   if (loading) return <p>Loading...</p>;
   if (error) return <p>Error: {error}</p>;
 
   const renderPage = (props: any) => {
-    const rect = document
-      .getElementById("preview-page")
-      ?.getBoundingClientRect();
-    const scaleX = rect ? 595 / rect.width : 1;
-    const scaleY = rect ? 842 / rect.height : 1;
-    if (selection) {
-      // console.log("HEBATTTTT");
-      setScaledX(Math.round(selection.x / scaleX));
-      setScaledY(Math.round(selection.y / scaleY));
-      setScaledW(Math.round(selection.w / scaleX));
-      setScaledH(Math.round(selection.h / scaleY));
-      // console.log(scaledX, scaledY, scaledW, scaledH);
-    }
+    console.log(scaledX, scaledY, scaledW, scaledH);
     return (
       <div
         id="preview-page"
@@ -149,7 +177,8 @@ export default function ShowDataPage() {
         }}
       >
         {props.canvasLayer.children}
-
+        {props.textLayer.children}
+        {props.annotationLayer.children}
         <div
           className="flex left"
           style={{
@@ -266,14 +295,16 @@ export default function ShowDataPage() {
               Download Base File
             </button>
           </a>
-          <a href="">
-            <button
-              onClick={() => handleDownload()}
-              className="px-4 py-2 bg-black text-[#EDEDED] border border-white transition"
-            >
-              Download Signed File
-            </button>
-          </a>
+          {isAccepted === "Accepted" && (
+            <a href="">
+              <button
+                onClick={() => handleDownload()}
+                className="px-4 py-2 bg-black text-[#EDEDED] border border-white transition"
+              >
+                Download Signed File
+              </button>
+            </a>
+          )}
         </div>
       </div>
     </section>

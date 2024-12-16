@@ -163,7 +163,9 @@ export default function Request() {
       const scaledY = selection.y * scaleY;
       const scaledW = selection.w * scaleX;
       const scaledH = selection.height * scaleY;
-      console.log(`${scaledX} ${scaledY} ${scaledW} ${scaledH}`);
+      console.log(
+        `${scaledX} ${scaledY} ${scaledW} ${scaledH} ${pageIndex} ${rect.width} ${rect.height}`
+      );
 
       setUploading(true);
       const formData = new FormData();
@@ -173,7 +175,7 @@ export default function Request() {
         method: "POST",
         body: formData,
         headers: {
-          Authorization: `Bearer ${token} ${selectedUsername} ${scaledX} ${scaledY} ${scaledW} ${scaledH} ${pageIndex}`,
+          Authorization: `Bearer ${token} ${selectedUsername} ${scaledX} ${scaledY} ${scaledW} ${scaledH} ${pageIndex} ${rect.width} ${rect.height}`,
           Message: topic,
         },
       })
@@ -205,18 +207,19 @@ export default function Request() {
   const handleDragOver = (event: React.DragEvent) => {
     event.preventDefault();
   };
-  const handleRemoveSelection = () => {
+  const handleRemoveSelection = (event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
     setSelection(null);
     console.log("WOI");
   };
-  const handleMouseDown = (e: React.MouseEvent, pageIndex: number) => {
+  const handleMouseDown = (
+    e: React.MouseEvent,
+    page: HTMLElement,
+    pageIndex: number
+  ) => {
     // document.body.style.userSelect = "none";
-    // console.log(e.currentTarget);
-    // if(e.currentTarget.id === "x-button") {
-    //   handleRemoveSelection();
-    //   return;
-    // }
-    const rect = (e.target as HTMLElement).getBoundingClientRect();
+    const rect = page.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
@@ -228,7 +231,11 @@ export default function Request() {
     console.log("Page Index:", pageIndex, "Coordinates:", { x, y });
   };
 
-  const handleMouseMove = (e: React.MouseEvent, pageIndex: number) => {
+  const handleMouseMove = (
+    e: React.MouseEvent,
+    page: HTMLElement,
+    pageIndex: number
+  ) => {
     if (startPoint) {
       if (animationFrameId.current) {
         cancelAnimationFrame(animationFrameId.current);
@@ -237,20 +244,19 @@ export default function Request() {
       if (clickedPageIndex === pageIndex) {
         animationFrameId.current = requestAnimationFrame(() => {
           setPageIndex(pageIndex);
-          console.log(pageIndex);
-          const rect = (e.target as HTMLElement).getBoundingClientRect();
+          // console.log(pageIndex);
+          const rect = page.getBoundingClientRect();
           const currentX = e.clientX - rect.left;
           let currentY = e.clientY - rect.top;
 
-          const w = currentX - startPoint.x;
-          const height = currentY - startPoint.y;
+          const x = startPoint.x;
+          const y = startPoint.y;
+          const w = currentX - x;
+          const height = currentY - y;
 
-          handleSelection({
-            x: startPoint.x,
-            y: startPoint.y,
-            w,
-            height,
-          });
+          setSelection((prevSelection) => ({
+            [pageIndex]: { x, y, w, height },
+          }));
         });
       }
     }
@@ -272,7 +278,9 @@ export default function Request() {
     const rect = (e.target as HTMLElement).getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-
+    setPageIndex(pageIndex);
+    setClickedPageIndex(pageIndex);
+    console.log("Page Index:", pageIndex, "Coordinates:", { x, y });
     // Reset the selection for all pages except the current one
     setSelection((prevSelection) => ({
       [pageIndex]: { x, y, w: width, height: height },
@@ -285,7 +293,6 @@ export default function Request() {
 
   const renderPage = (props: any) => {
     const { pageIndex } = props;
-
     const currentSelection = selection ? selection[pageIndex] : null;
     return (
       <div
@@ -302,10 +309,14 @@ export default function Request() {
           zIndex: 100,
         }}
         onMouseDown={
-          isMdScreen ? (e) => handleMouseDown(e, pageIndex) : undefined
+          isMdScreen
+            ? (e) => handleMouseDown(e, e.currentTarget, pageIndex)
+            : undefined
         }
         onMouseMove={
-          isMdScreen ? (e) => handleMouseMove(e, pageIndex) : undefined
+          isMdScreen
+            ? (e) => handleMouseMove(e, e.currentTarget, pageIndex)
+            : undefined
         }
         onMouseUp={isMdScreen ? handleMouseUp : undefined}
         onClick={!isMdScreen ? (e) => handlePageClick(e, pageIndex) : undefined}
@@ -321,16 +332,16 @@ export default function Request() {
               top: `${selection[pageIndex].y}px`,
               width: `${selection[pageIndex].w}px`,
               height: `${selection[pageIndex].height}px`,
-              border: "2px solid red",
+              border: "2px groove black",
+              backgroundColor: "rgba(0, 0, 0, 0.1)",
             }}
           >
-            {/* X button */}
             <button
               style={{
                 position: "absolute",
                 top: "0",
                 right: "0",
-                background: "red",
+                background: "black",
                 color: "white",
                 border: "none",
                 borderRadius: "50%",
@@ -339,9 +350,9 @@ export default function Request() {
                 cursor: "pointer",
               }}
               onClick={handleRemoveSelection}
-              className="hover:bg-black z-50"
+              className="hover:bg-black z-50 flex items-center justify-center text-sm"
             >
-              X
+              <span>×</span>
             </button>
           </div>
         )}
@@ -349,33 +360,34 @@ export default function Request() {
           <div
             style={{
               position: "absolute",
-              left: selection[pageIndex].x,
-              top: selection[pageIndex].y,
-              width: selection[pageIndex].w,
-              height: selection[pageIndex].height,
+              left: `${selection[pageIndex].x}px`,
+              top: `${selection[pageIndex].y}px`,
+              width: `${selection[pageIndex].w}px`,
+              height: `${selection[pageIndex].height}px`,
               border: "2px groove black",
-              backgroundColor: "rgba(255, 0, 0, 0.1)",
-              pointerEvents: "none",
+              backgroundColor: "rgba(0, 0, 0, 0.1)",
             }}
-          />
+          >
+            <button
+              style={{
+                position: "absolute",
+                top: "0",
+                right: "0",
+                background: "black",
+                color: "white",
+                border: "none",
+                borderRadius: "50%",
+                width: "20px",
+                height: "20px",
+                cursor: "pointer",
+              }}
+              onClick={handleRemoveSelection}
+              className="hover:bg-black z-50 flex items-center justify-center text-sm"
+            >
+              <span>×</span>
+            </button>
+          </div>
         )}
-        <button
-          style={{
-            position: "absolute",
-            top: "0",
-            right: "0",
-            background: "red",
-            color: "white",
-            border: "none",
-            borderRadius: "50%",
-            width: "20px",
-            height: "20px",
-            cursor: "pointer",
-          }}
-          onClick={handleRemoveSelection}
-        >
-          X
-        </button>
       </div>
     );
   };
@@ -561,6 +573,7 @@ export default function Request() {
             workerUrl={`https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js`}
           >
             <Viewer
+              key={fileUrl}
               fileUrl={fileUrl}
               defaultScale={SpecialZoomLevel.PageFit}
               renderPage={renderPage}
