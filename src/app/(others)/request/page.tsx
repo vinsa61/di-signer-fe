@@ -228,7 +228,7 @@ export default function Request() {
 
     setClickedPageIndex(pageIndex);
 
-    console.log("Page Index:", pageIndex, "Coordinates:", { x, y });
+    // console.log("Page Index:", pageIndex, "Coordinates:", { x, y });
   };
 
   const handleMouseMove = (
@@ -339,8 +339,8 @@ export default function Request() {
             <button
               style={{
                 position: "absolute",
-                top: "0",
-                right: "0",
+                top: "-10px",
+                right: "-10px",
                 background: "black",
                 color: "white",
                 border: "none",
@@ -371,8 +371,8 @@ export default function Request() {
             <button
               style={{
                 position: "absolute",
-                top: "0",
-                right: "0",
+                top: "-10px",
+                right: "-10px",
                 background: "black",
                 color: "white",
                 border: "none",
