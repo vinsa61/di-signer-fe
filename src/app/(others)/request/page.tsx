@@ -31,13 +31,14 @@ export default function Request() {
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const [fileUrl, setFileUrl] = useState<string | null>(null);
   const [selection, setSelection] = useState<{
-    [pageNumber: number]: {
+    [pageNumber: number]: Array<{
       x: number;
       y: number;
       w: number;
       height: number;
-    };
-  } | null>(null);
+    }>;
+  }>({});
+
   const [startPoint, setStartPoint] = useState<{ x: number; y: number } | null>(
     null
   );
@@ -46,6 +47,12 @@ export default function Request() {
   const methods = useForm<SignUpRequest>({ mode: "onChange" });
   const [pageIndex, setPageIndex] = useState<number>(0);
   const [clickedPageIndex, setClickedPageIndex] = useState<number>(0);
+  const [currentSelection, setCurrentSelection] = useState<{
+    x: number;
+    y: number;
+    w: number;
+    height: number;
+  } | null>(null);
 
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
 
@@ -130,19 +137,16 @@ export default function Request() {
     w: number;
     height: number;
   }) => {
-    // Clear previous selection for the current page and set the new selection
-    setSelection((prevSelection) => ({
-      ...prevSelection,
-      [pageIndex]: newSelection, // Update the selection for the current page
-    }));
+    setSelection((prevSelection) => {
+      const pageSelections = prevSelection[pageIndex] || []; // Retrieve existing selections for the page or default to an empty array
+      return {
+        ...prevSelection,
+        [pageIndex]: [...pageSelections, newSelection], // Add the new selection to the array for the page
+      };
+    });
   };
 
-  const handleUploadClick = (selection: {
-    x: number;
-    y: number;
-    w: number;
-    height: number;
-  }) => {
+  const handleUploadClick = () => {
     if (selectedFile && selection) {
       const token = localStorage.getItem("token");
 
@@ -150,6 +154,8 @@ export default function Request() {
         toast.error("User is not logged in.");
         return;
       }
+
+      setUploading(true);
 
       const page = document.getElementById("preview-page");
       if (!page) return;
@@ -159,41 +165,60 @@ export default function Request() {
       const scaleX = 595 / rect.width;
       const scaleY = 842 / rect.height;
 
-      const scaledX = selection.x * scaleX;
-      const scaledY = selection.y * scaleY;
-      const scaledW = selection.w * scaleX;
-      const scaledH = selection.height * scaleY;
-      console.log(
-        `${scaledX} ${scaledY} ${scaledW} ${scaledH} ${pageIndex} ${rect.width} ${rect.height}`
+      const scaledSelections = Object.entries(selection).map(
+        ([pageIndex, boxes]) => ({
+          pageIndex: Number(pageIndex),
+          boxes: boxes.map((box) => ({
+            x: box.x * scaleX,
+            y: box.y * scaleY,
+            w: box.w * scaleX,
+            h: box.height * scaleY,
+          })),
+        })
       );
 
-      setUploading(true);
       const formData = new FormData();
       formData.append("pdf", selectedFile);
+      formData.append(
+        "metadata",
+        JSON.stringify({
+          username: selectedUsername,
+          topic,
+          scaledSelections, // Add all scaled boxes
+          originalDimensions: {
+            width: rect.width,
+            height: rect.height,
+          },
+        })
+      );
 
       fetch(`${backendUrl}/api/upload/document`, {
         method: "POST",
         body: formData,
         headers: {
-          Authorization: `Bearer ${token} ${selectedUsername} ${scaledX} ${scaledY} ${scaledW} ${scaledH} ${pageIndex} ${rect.width} ${rect.height}`,
-          Message: topic,
+          Authorization: `Bearer ${token}`,
         },
       })
-        .then((response) => response.json())
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error("Failed to upload document.");
+          }
+          return response.json();
+        })
         .then((data) => {
-          // toast.success("File uploaded successfully!");
-          window.location.href = "/dashboard?requestSuccess=true";
+          toast.success("File uploaded successfully!");
           setFileUrl(data.fileUrl);
+          window.location.href = "/dashboard?requestSuccess=true";
         })
         .catch((error) => {
           console.error("Error uploading file:", error);
-          toast.error(error);
+          toast.error("Failed to upload file.");
         })
         .finally(() => {
           setUploading(false);
         });
     } else {
-      toast.error("No file selected.");
+      toast.error("No file selected or no selections made.");
     }
   };
 
@@ -207,28 +232,46 @@ export default function Request() {
   const handleDragOver = (event: React.DragEvent) => {
     event.preventDefault();
   };
-  const handleRemoveSelection = (event: React.MouseEvent) => {
+  const handleRemoveSelection = (
+    event: React.MouseEvent,
+    pageIndex: number,
+    index: number
+  ) => {
     event.preventDefault();
     event.stopPropagation();
-    setSelection(null);
-    console.log("WOI");
+
+    setSelection((prevSelection) => {
+      const pageSelections = prevSelection[pageIndex] || [];
+      const updatedSelections = pageSelections.filter((_, i) => i !== index);
+
+      // If no selections remain on the page, remove the key entirely.
+      if (updatedSelections.length === 0) {
+        const { [pageIndex]: _, ...rest } = prevSelection;
+        return rest;
+      }
+
+      return {
+        ...prevSelection,
+        [pageIndex]: updatedSelections,
+      };
+    });
   };
+
   const handleMouseDown = (
     e: React.MouseEvent,
     page: HTMLElement,
     pageIndex: number
   ) => {
-    // document.body.style.userSelect = "none";
+    e.preventDefault();
+    e.stopPropagation();
+
     const rect = page.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    setPageIndex(pageIndex);
     setStartPoint({ x, y });
-
+    setPageIndex(pageIndex);
     setClickedPageIndex(pageIndex);
-
-    // console.log("Page Index:", pageIndex, "Coordinates:", { x, y });
   };
 
   const handleMouseMove = (
@@ -236,35 +279,36 @@ export default function Request() {
     page: HTMLElement,
     pageIndex: number
   ) => {
-    if (startPoint) {
-      if (animationFrameId.current) {
-        cancelAnimationFrame(animationFrameId.current);
-      }
+    if (startPoint && clickedPageIndex === pageIndex) {
+      const rect = page.getBoundingClientRect();
+      const currentX = e.clientX - rect.left;
+      const currentY = e.clientY - rect.top;
 
-      if (clickedPageIndex === pageIndex) {
-        animationFrameId.current = requestAnimationFrame(() => {
-          setPageIndex(pageIndex);
-          // console.log(pageIndex);
-          const rect = page.getBoundingClientRect();
-          const currentX = e.clientX - rect.left;
-          let currentY = e.clientY - rect.top;
+      const x = Math.min(startPoint.x, currentX);
+      const y = Math.min(startPoint.y, currentY);
+      const w = Math.abs(currentX - startPoint.x);
+      const height = Math.abs(currentY - startPoint.y);
 
-          const x = startPoint.x;
-          const y = startPoint.y;
-          const w = currentX - x;
-          const height = currentY - y;
-
-          setSelection((prevSelection) => ({
-            [pageIndex]: { x, y, w, height },
-          }));
-        });
+      if (w > 0 && height > 0) {
+        setCurrentSelection({ x, y, w, height });
       }
     }
   };
 
   const handleMouseUp = () => {
-    document.body.style.userSelect = "";
+    if (currentSelection) {
+      setSelection((prevSelection) => {
+        const pageSelections = prevSelection[pageIndex] || [];
+        return {
+          ...prevSelection,
+          [pageIndex]: [...pageSelections, currentSelection],
+        };
+      });
+    }
+
+    setCurrentSelection(null);
     setStartPoint(null);
+
     if (animationFrameId.current) {
       cancelAnimationFrame(animationFrameId.current);
       animationFrameId.current = null;
@@ -274,26 +318,30 @@ export default function Request() {
   const [width, setWidth] = useState(60);
   const [height, setHeight] = useState(35);
 
-  const handlePageClick = (e: React.MouseEvent, pageIndex: number) => {
-    const rect = (e.target as HTMLElement).getBoundingClientRect();
+  const handlePageClick = (
+    e: React.MouseEvent,
+    page: HTMLElement,
+    pageIndex: number
+  ) => {
+    const rect = page.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    setPageIndex(pageIndex);
-    setClickedPageIndex(pageIndex);
+
     console.log("Page Index:", pageIndex, "Coordinates:", { x, y });
-    // Reset the selection for all pages except the current one
-    setSelection((prevSelection) => ({
-      [pageIndex]: { x, y, w: width, height: height },
-    }));
+
+    setSelection((prevSelection) => {
+      const pageSelections = prevSelection[pageIndex] || [];
+      const newSelection = { x, y, w: width, height: height };
+
+      return {
+        ...prevSelection,
+        [pageIndex]: [...pageSelections, newSelection],
+      };
+    });
   };
-  // const handlePageChange = (e: PageChangeEvent) => {
-  //   setPageIndex(e.currentPage);
-  //   console.log("Current Page Index:", e.currentPage);
-  // };
 
   const renderPage = (props: any) => {
     const { pageIndex } = props;
-    const currentSelection = selection ? selection[pageIndex] : null;
     return (
       <div
         id="preview-page"
@@ -319,74 +367,100 @@ export default function Request() {
             : undefined
         }
         onMouseUp={isMdScreen ? handleMouseUp : undefined}
-        onClick={!isMdScreen ? (e) => handlePageClick(e, pageIndex) : undefined}
+        onClick={
+          !isMdScreen
+            ? (e) => handlePageClick(e, e.currentTarget, pageIndex)
+            : undefined
+        }
       >
         {props.canvasLayer.children}
         {props.textLayer.children}
         {props.annotationLayer.children}
-        {isMdScreen && selection && selection[pageIndex] && (
-          <div
-            style={{
-              position: "absolute",
-              left: `${selection[pageIndex].x}px`,
-              top: `${selection[pageIndex].y}px`,
-              width: `${selection[pageIndex].w}px`,
-              height: `${selection[pageIndex].height}px`,
-              border: "2px groove black",
-              backgroundColor: "rgba(0, 0, 0, 0.1)",
-            }}
-          >
-            <button
-              style={{
-                position: "absolute",
-                top: "-10px",
-                right: "-10px",
-                background: "black",
-                color: "white",
-                border: "none",
-                borderRadius: "50%",
-                width: "20px",
-                height: "20px",
-                cursor: "pointer",
-              }}
-              onClick={handleRemoveSelection}
-              className="hover:bg-black z-50 flex items-center justify-center text-sm"
-            >
-              <span>×</span>
-            </button>
-          </div>
+        {isMdScreen && (
+          <>
+            {selection[pageIndex]?.map((sel, index) => (
+              <div
+                key={index}
+                style={{
+                  position: "absolute",
+                  left: `${sel.x}px`,
+                  top: `${sel.y}px`,
+                  width: `${sel.w}px`,
+                  height: `${sel.height}px`,
+                  border: "2px groove black",
+                  backgroundColor: "rgba(0, 0, 0, 0.1)",
+                }}
+              >
+                <button
+                  style={{
+                    position: "absolute",
+                    top: "-10px",
+                    right: "-10px",
+                    background: "black",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "50%",
+                    width: "20px",
+                    height: "20px",
+                    cursor: "pointer",
+                  }}
+                  onClick={(e) => handleRemoveSelection(e, pageIndex, index)}
+                  className="hover:bg-black z-50 flex items-center justify-center text-sm"
+                >
+                  <span>×</span>
+                </button>
+              </div>
+            ))}
+            {currentSelection &&
+              currentSelection.w > 0 &&
+              currentSelection.height > 0 && (
+                <div
+                  style={{
+                    position: "absolute",
+                    left: `${currentSelection.x}px`,
+                    top: `${currentSelection.y}px`,
+                    width: `${currentSelection.w}px`,
+                    height: `${currentSelection.height}px`,
+                    border: "2px groove black",
+                    backgroundColor: "rgba(0, 0, 0, 0.1)",
+                  }}
+                ></div>
+              )}
+          </>
         )}
-        {!isMdScreen && selection && selection[pageIndex] && (
-          <div
-            style={{
-              position: "absolute",
-              left: `${selection[pageIndex].x}px`,
-              top: `${selection[pageIndex].y}px`,
-              width: `${selection[pageIndex].w}px`,
-              height: `${selection[pageIndex].height}px`,
-              border: "2px groove black",
-              backgroundColor: "rgba(0, 0, 0, 0.1)",
-            }}
-          >
-            <button
-              style={{
-                position: "absolute",
-                top: "-10px",
-                right: "-10px",
-                background: "black",
-                color: "white",
-                border: "none",
-                borderRadius: "50%",
-                width: "20px",
-                height: "20px",
-                cursor: "pointer",
-              }}
-              onClick={handleRemoveSelection}
-              className="hover:bg-black z-50 flex items-center justify-center text-sm"
-            >
-              <span>×</span>
-            </button>
-          </div>
+
+        {!isMdScreen && (
+          <>
+            {selection[pageIndex]?.map((sel, index) => (
+              <div
+                key={index}
+                style={{
+                  position: "absolute",
+                  left: `${sel.x}px`,
+                  top: `${sel.y}px`,
+                  width: `${sel.w}px`,
+                  height: `${sel.height}px`,
+                  border: "2px groove black",
+                  backgroundColor: "rgba(0, 0, 0, 0.1)",
+                }}
+              ></div>
+            ))}
+            {currentSelection &&
+              currentSelection.w > 0 &&
+              currentSelection.height > 0 && (
+                <div
+                  style={{
+                    position: "absolute",
+                    left: `${currentSelection.x}px`,
+                    top: `${currentSelection.y}px`,
+                    width: `${currentSelection.w}px`,
+                    height: `${currentSelection.height}px`,
+                    border: "2px groove black",
+                    backgroundColor: "rgba(0, 0, 0, 0.1)",
+                  }}
+                ></div>
+              )}
+          </>
         )}
       </div>
     );
@@ -395,7 +469,7 @@ export default function Request() {
   return (
     <div className="flex h-auto md:h-[85vh] text-white w-[92%] md:w-[98%] mx-auto">
       <FormProvider {...methods}>
-        <form className="w-full md:w-1/2 p-8 flex flex-col items-start border-x border-b border-gray-700">
+        <form className="w-full md:w-1/2 p-8 flex flex-col items-start border-x border-b border-gray-700 overflow-auto">
           <h2 className="text-2xl md:text-3xl mb-6">Upload PDF</h2>
           {/* Search input */}
           <h2 className="text-base md:text-lg mb-2">Destination Username</h2>
@@ -493,31 +567,7 @@ export default function Request() {
               </p>
             </div>
           )}
-          <div className="mt-4 text-gray-700">
-            <h1>
-              Selected Coordinates: X:{" "}
-              {selection && selection[pageIndex]
-                ? selection[pageIndex].x.toFixed(2)
-                : 0}
-              , Y:{" "}
-              {selection && selection[pageIndex]
-                ? selection[pageIndex].y.toFixed(2)
-                : 0}
-              ,{" "}
-              {isMdScreen && (
-                <>
-                  Width:{" "}
-                  {selection && selection[pageIndex]
-                    ? selection[pageIndex].w.toFixed(2)
-                    : 0}
-                </>
-              )}
-            </h1>
-          </div>
-          <p>Clicked Page: {pageIndex + 1}</p> {/* Convert to 1-based index */}
-          {/* {startPoint && (
-              <p>Click Position: {`x: ${startPoint.x}, y: ${startPoint.y}`}</p>
-            )} */}
+
           <div
             className="w-full md:hidden h-[45vh] bg-gray-100 mt-6 p-4 border-3 border-primary border-dashed rounded-lg overflow-auto"
             style={{
@@ -545,8 +595,53 @@ export default function Request() {
               </p>
             )}
           </div>
+          <div
+            className={`w-full h-auto mt-4 text-gray-200 ${
+              isMdScreen ? "text-lg" : "text-sm"
+            }`}
+          >
+            <h1 className="text-base">All Selected Coordinates:</h1>
+            {selection && Object.keys(selection).length > 0 ? (
+              <ul>
+                {Object.entries(selection).map(([page, selections]) => (
+                  <li key={page} className="mb-4">
+                    <h2 className="font-bold">Page {Number(page) + 1}:</h2>
+                    {selections.length > 0 ? (
+                      <ul className="ml-4">
+                        {selections.map((sel, index) => (
+                          <li key={index}>
+                            <span>
+                              Box {index + 1}: X: {sel.x.toFixed(2)}, Y:{" "}
+                              {sel.y.toFixed(2)}, Width: {sel.w.toFixed(2)},
+                              Height: {sel.height.toFixed(2)}
+                            </span>
+                            <button
+                              onClick={(e) =>
+                                handleRemoveSelection(e, Number(page), index)
+                              }
+                              className="ml-2 text-red-500 hover:text-red-700"
+                            >
+                              Remove
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p>No selections made on this page.</p>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>No selections made on any page.</p>
+            )}
+          </div>
           <button
-            onClick={() => selection && handleUploadClick(selection[pageIndex])}
+            onClick={() =>
+              selection &&
+              selection[pageIndex] &&
+              handleUploadClick()
+            }
             disabled={
               !selectedFile ||
               !selectedUsername ||
