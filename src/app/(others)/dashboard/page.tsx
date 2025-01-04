@@ -8,6 +8,8 @@ import Image from "next/image";
 import toast from "react-hot-toast";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
+import SearchBar from "@/app/components/dashboard/searchbar";
+import FilterButton from "@/app/components/dashboard/filterbutton";
 
 const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
 async function getInboxData(): Promise<Request[]> {
@@ -26,7 +28,6 @@ async function getInboxData(): Promise<Request[]> {
   return data.json();
 }
 
-// Mock function to fetch Inbox data
 async function getRequestData(): Promise<Inbox[]> {
   const token = localStorage.getItem("token");
   const data = await fetch(`${backendUrl}/api/search/requests`, {
@@ -47,6 +48,9 @@ const Dashboard = () => {
   const [activeTable, setActiveTable] = useState<"first" | "second">("first");
   const [data1, setData1] = useState<Request[]>([]);
   const [data2, setData2] = useState<Inbox[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
+
   const router = useRouter();
 
   useEffect(() => {
@@ -80,6 +84,40 @@ const Dashboard = () => {
     handleSuccessMessage("acceptSuccess", "Accept Successful!");
     handleSuccessMessage("denySuccess", "Deny Successful!");
   }, [searchParams]);
+
+  const handleFilterApply = (filters: string[]) => {
+    setSelectedFilters(filters);
+  };
+
+  const filteredData1 = data1.filter(
+    (item) =>
+      (item.id?.toLowerCase().includes(searchQuery) ||
+        item.senderUsername?.toLowerCase().includes(searchQuery) ||
+        item.content?.toLowerCase().includes(searchQuery)) &&
+      (selectedFilters.length > 0 ? selectedFilters.includes(item.status) : true)
+  );
+
+  const filteredData2 = data2.filter(
+    (item) =>
+      (item.id?.toLowerCase().includes(searchQuery) ||
+        item.receiverUsername?.toLowerCase().includes(searchQuery) ||
+        item.content?.toLowerCase().includes(searchQuery)) &&
+      (selectedFilters.length > 0 ? selectedFilters.includes(item.status) : true)
+  );
+
+  useEffect(() => {
+    console.log("Data1: ", data1);
+    console.log("Data2: ", data2);
+  }, [data1, data2]);
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query.toLowerCase());
+  };
+
+  const resetSearch = () => {
+    setSearchQuery("");
+  };
+
   return (
     <div className="container md:w-[98%] w-[92%] mx-auto py-10">
       <div className="flex gap-2 mb-4">
@@ -116,17 +154,25 @@ const Dashboard = () => {
           />
         </button>
       </div>
+      <div className="flex w-full justify-between">
+        <SearchBar
+          onSearch={handleSearch}
+          onReset={resetSearch}
+          searchQuery={searchQuery}
+        />
+        <FilterButton onFilterApply={handleFilterApply} />
+      </div>
 
       {activeTable === "first" ? (
         <DataTable
           columns={columns1}
-          data={data1}
+          data={filteredData1}
           rowClickHandler={handleRowClick}
         />
       ) : (
         <DataTable
           columns={columns2}
-          data={data2}
+          data={filteredData2}
           rowClickHandler={handleRowClick}
         />
       )}

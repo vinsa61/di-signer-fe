@@ -7,14 +7,15 @@ export type Request = {
   id: string;
   time: string;
   status: "Unresolved" | "Accepted" | "Denied";
-  receiver: string;
+  content: string;
+  senderUsername: string;
 };
 
 export type Inbox = {
   id: string;
   status: "Unresolved" | "Accepted" | "Denied";
-  sender: string;
-  message: string;
+  receiverUsername: string;
+  content: string;
   time: string;
 };
 
