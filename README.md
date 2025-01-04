@@ -29,4 +29,4 @@ Clone the repository:
 1. In console, run "npm install"
 2. Make ".env" file in root folder
    `NEXT_PUBLIC_BACKEND_URL=[your-backend-url]` 
-3. Run the program with "npm run dev"
+3. Run the website with "npm run dev"
