@@ -89,21 +89,37 @@ const Dashboard = () => {
     setSelectedFilters(filters);
   };
 
-  const filteredData1 = data1.filter(
-    (item) =>
-      (item.id?.toLowerCase().includes(searchQuery) ||
-        item.senderUsername?.toLowerCase().includes(searchQuery) ||
-        item.content?.toLowerCase().includes(searchQuery)) &&
-      (selectedFilters.length > 0 ? selectedFilters.includes(item.status) : true)
-  );
+  const filteredData1 = data1
+    .filter(
+      (item) =>
+        (item.id?.toLowerCase().includes(searchQuery) ||
+          item.senderUsername?.toLowerCase().includes(searchQuery) ||
+          item.content?.toLowerCase().includes(searchQuery)) &&
+        (selectedFilters.length > 0
+          ? selectedFilters.includes(item.status)
+          : true)
+    )
+    .sort((a, b) => {
+      const dateA = new Date(a.time);
+      const dateB = new Date(b.time);
+      return dateB.getTime() - dateA.getTime();
+    });
 
-  const filteredData2 = data2.filter(
-    (item) =>
-      (item.id?.toLowerCase().includes(searchQuery) ||
-        item.receiverUsername?.toLowerCase().includes(searchQuery) ||
-        item.content?.toLowerCase().includes(searchQuery)) &&
-      (selectedFilters.length > 0 ? selectedFilters.includes(item.status) : true)
-  );
+  const filteredData2 = data2
+    .filter(
+      (item) =>
+        (item.id?.toLowerCase().includes(searchQuery) ||
+          item.receiverUsername?.toLowerCase().includes(searchQuery) ||
+          item.content?.toLowerCase().includes(searchQuery)) &&
+        (selectedFilters.length > 0
+          ? selectedFilters.includes(item.status)
+          : true)
+    )
+    .sort((a, b) => {
+      const dateA = new Date(a.time);
+      const dateB = new Date(b.time);
+      return dateB.getTime() - dateA.getTime();
+    });
 
   useEffect(() => {
     console.log("Data1: ", data1);
